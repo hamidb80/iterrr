@@ -8,7 +8,8 @@ study "simple chain":
     Iter :> imap(Op).reducer(Default)
 
     var resultState = Default | iredDefState[typeof T]()
-    T = block:
+    
+    template DerefedType: untyped =
       # <- means replace with
       it <- default(typeof Iter) 
       it <- Op
