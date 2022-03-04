@@ -2,7 +2,7 @@
 
 version       = "0.0.1"
 author        = "hamidb80"
-description   = "iterator utility"
+description   = "iterator-ish convert of lazy functional higher-order functions"
 license       = "MIT"
 srcDir        = "src"
 

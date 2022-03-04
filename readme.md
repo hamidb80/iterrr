@@ -1,17 +1,19 @@
-# Steps!
+# iterrr!
 
-there are only 3 things in `steps`:
+there are only 3 things in `iterrr`:
 1. imap
 2. ifilter
 3. [reducer]
+
+your face after using this library is the one that this library use `:>` (a simple happy face - with 90deg rotation ofcourse).
 
 
 ## inspired by
 1. [zero_functional](https://github.com/zero-functional/zero-functional)
 2. [itertools](https://github.com/narimiran/itertools)
 
-## **steps** vs `zero_functional`:
-steps targets the same problem as `zero_functional`, 
+## **iterrr** vs `zero_functional`:
+iterrr targets the same problem as `zero_functional`, 
 while being better at:
   1. extensibility
   2. using less meta programming
