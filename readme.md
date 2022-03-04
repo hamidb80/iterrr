@@ -6,8 +6,6 @@ iterate faster ... 🏎️
 
 ## the solution
 
-your face after using this library is the one that this library use `:>` (a simple happy face - with 90deg rotation ofcourse).
-
 ## concepts
 
 there are only 3 things in `iterrr`:

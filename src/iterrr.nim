@@ -69,5 +69,5 @@ proc iii(what, body: NimNode): NimNode =
       `loopBody`
 
 
-macro `:>`*(it, body) =
+macro `><`*(it, body) =
   iii it, body

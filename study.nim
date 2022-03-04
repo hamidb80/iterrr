@@ -2,43 +2,36 @@ template study(name, body) = discard
 
 """
   there is/are:
-    only one 'for loop'
+    only one for loop
     many blocks as imap
     maybe filters
-    one reducer always 
+    one reducer always
 """
 
 study "single":
   1.reducer: INVALID
 
-study "simple chain":
+study "chain":
   1.imap.reducer: # with default value
-    Iter :> imap(Op).ired(Default)
+    Iter >< imap(Op).ired(Default)
 
-    template DerefedType: untyped =
-      # <- means replace with
+    DerefedType: # <- means replace with
       it <- default(typeof Iter)
       it <- Op
       Op2
 
-    var resultState = Default | iredDefState[typeof DerefedType]()
+    var resultState = Default | iredDefault[typeof DerefedType]()
 
     block mainLoop:
       for it {.inject.} in Iter:
         block: # new block introduces with a imap [to localize `it`]
           let it = Op
-          if not ired(resultState, Op):
+          if not ired(resultState, it):
             break mainLoop
 
-  2.imap.reducer: # with default value
-    Iter :> ifilter(Cond).ired(Default)
-
-    var resultState = _
+  2.ifilter.reducer: # with default value
+    Iter >< ifilter(Cond).ired(Default)
 
     for it in Iter:
       if Cond:
-        if not ired(resultState, Op):
-          break mainLoop
-
-study "complex chain":
-  discard
+        _
