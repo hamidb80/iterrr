@@ -1,5 +1,13 @@
 template study(name, body) = discard
 
+"""
+  there is/are:
+    only one 'for loop'
+    many blocks as imap
+    maybe filters
+    one reducer always 
+"""
+
 study "single":
   1.reducer: INVALID
 
@@ -7,11 +15,11 @@ study "simple chain":
   1.imap.reducer: # with default value
     Iter :> imap(Op).reducer(Default)
 
-    var resultState = Default | iredDefState[typeof T]()
-    
+    var resultState = Default | iredDefState[typeof DerefedType]()
+
     template DerefedType: untyped =
       # <- means replace with
-      it <- default(typeof Iter) 
+      it <- default(typeof Iter)
       it <- Op
       Op2
 
