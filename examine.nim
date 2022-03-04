@@ -1,43 +1,52 @@
-when false: # scenarios
-  1. imap:
-    10..20 >. imap(it + 2)
-    # -----------------------
+template study(name, body) = discard
 
-    var rs: seq[typeof 10..20]
-    for it {.inject.} in 10..20:
-      rs.add it + 2
+study "single":
+  1.reducer: INVALID
 
-  
-  2. imap.ifilter:
-    10..20 >. imap(it + 2).ifilter(it > 5)
-    # -----------------------
+study "simple":
+  1.imap == imap.reducer:
+    Iter :> imap(Op)
 
-    var rs: seq[typeof 10..20]
-    for it in 10..20:
-      let it = it + 2
-      if it > 5:
+    var resultState = iseqDefState[typeof Iter]()
+
+    block mainLoop:
+      for it {.inject.} in Iter:
+        if not ired(resultState, Op):
+          break mainLoop
+
+    resultState
+
+  2.ifilter == ifilter.reducer:
+    Iter :> ifilter(Cond)
+
+    var resultState = iseqDefState[typeof Iter]()
+
+    block mainLoop:
+      for it {.inject.} in Iter:
+        if Cond:
+          if not ired(resultState, it = NoOp):
+            break mainLoop
+
+    resultState
+
+study "chains":
+  1.imap.ifilter [reducer]:
+    Iter :> imap(Op).ifilter(Cond)
+
+    var rs: seq[typeof Iter]
+    for it in Iter:
+      let it = Op
+      if Cond:
         rs.add it
 
+  3.imap.ifilter.imap [reducer]:
+    Iter :> imap(Op).ifilter(Cond).imap($it)
 
-  2. imap.ifilter.reducer:
-    10..20 >- imap(it + 2).ifilter(it > 5).imax()
-    # -----------------------
-
-    var acc = initImaxDefaultValue()
-    for it in 10..20:
-      let it = it + 2
-      if it > 5:
-        if not imax(it, acc):
-          break
-
-
-          
-  4. imap.ifilter.imap:
-    10..20 >. imap(it + 2).ifilter(it > 5).imap($it)
-    # -----------------------
-
-    var rs: seq[typeof (typeof 10..20).default + 2]
-    for it in 10..20:
-      let it = it + 2
-      if it > 5:
+    var rs: seq[typeof (typeof Iter).default + 2]
+    for it in Iter:
+      let it = Op
+      if Cond:
         rs.add $it
+
+  4.imap.ifilter.imap.ifiter [reducer]:
+    discard
