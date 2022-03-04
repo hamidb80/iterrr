@@ -1,6 +1,7 @@
 template study(name, body) = discard
+template conclusion(_) = discard
 
-"""
+conclusion """
   there is/are:
     only one for loop
     many blocks as imap
