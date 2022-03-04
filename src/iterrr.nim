@@ -2,6 +2,8 @@ import std/[macros, strutils]
 import macroplus
 import ./iterrr/reducers
 
+export reducers
+
 # utils -----------------------------------------
 
 template err(msg): untyped =
@@ -30,17 +32,6 @@ proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
 proc flattenNestedDotExprCall(n: NimNode): seq[NimNode] =
   ## imap(1).ifilter(2).imax()
   ##
-  ## Call
-  ##   DotExpr
-  ##     Call
-  ##       DotExpr
-  ##         Call
-  ##           Ident "imap"
-  ##           IntLit 1
-  ##         Ident "ifilter"
-  ##       IntLit 2
-  ##     Ident "imax"
-  ##
   ## converts to >>>
   ##
   ## Call
@@ -65,17 +56,18 @@ proc validityCheck(nodes: seq[NimNode]) =
       ):
       err "finalizer can only be last call: " & caller
 
-proc iii(body: NimNode): NimNode =
-  let rs = flattenNestedDotExprCall body
+proc iii(what, body: NimNode): NimNode =
+  var
+    rs = flattenNestedDotExprCall body
+    loopBody = newStmtList()
+
+  # TODO add `iseq` finalizer if it doesn't have any
   validityCheck rs
 
-  # result = genForLoop()
-  for n in rs:
-    discard
+  quote:
+    for it {.inject.} in `what`:
+      `loopBody`
 
-  newEmptyNode()
 
-macro `:>`*(D, body) =
-  iii body
-
-export reducers
+macro `:>`*(it, body) =
+  iii it, body

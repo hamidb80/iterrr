@@ -13,9 +13,7 @@ study "single":
 
 study "simple chain":
   1.imap.reducer: # with default value
-    Iter :> imap(Op).reducer(Default)
-
-    var resultState = Default | iredDefState[typeof DerefedType]()
+    Iter :> imap(Op).ired(Default)
 
     template DerefedType: untyped =
       # <- means replace with
@@ -23,18 +21,21 @@ study "simple chain":
       it <- Op
       Op2
 
-    for it {.inject.} in Iter:
-      block: # new block introduces with a imap [to localize `it`]
-        let it = Op
-        if not ired(resultState, Op):
-          break mainLoop
+    var resultState = Default | iredDefState[typeof DerefedType]()
+
+    block mainLoop:
+      for it {.inject.} in Iter:
+        block: # new block introduces with a imap [to localize `it`]
+          let it = Op
+          if not ired(resultState, Op):
+            break mainLoop
 
   2.imap.reducer: # with default value
-    Iter :> ifilter(Cond).reducer(Default)
+    Iter :> ifilter(Cond).ired(Default)
 
-    var resultState = Default
-    for it {.inject.} in Iter:
-      # let it = Op
+    var resultState = _
+
+    for it in Iter:
       if Cond:
         if not ired(resultState, Op):
           break mainLoop
