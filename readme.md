@@ -48,6 +48,5 @@ not really, you can use them both together.
 here are some suggestion:
 
 1. add benchmark 
-  * `std/sequtils` vs `iterrr`
+  * `std/sequtils` vs `iterrr` vs `zero_functional`
   * compare to other languages like Rust, Go, Haskell, ...
-2. suggest a solution to support converting to procedure

@@ -9,9 +9,6 @@ conclusion """
     one reducer always
 """
 
-study "single":
-  1.reducer: INVALID
-
 study "chain":
   1.imap.reducer: # with default value
     Iter >< imap(Op).ired(Default)

@@ -52,7 +52,7 @@ proc validityCheck(nodes: seq[NimNode]) =
     let caller = n[CallIdent].strVal.normalize
     if not (
         caller in ["imap", "ifilter"] or
-        i in [0, nodes.high]
+        i == nodes.high
       ):
       err "finalizer can only be last call: " & caller
 
