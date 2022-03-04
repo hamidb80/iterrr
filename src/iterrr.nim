@@ -1,8 +1,8 @@
-import std/[macros, algorithm]
-import macroplus
-
 import std/[macros, strutils]
 import macroplus
+import ./iterrr/reducers
+
+# utils -----------------------------------------
 
 template err(msg): untyped =
   raise newException(ValueError, msg)
@@ -54,6 +54,7 @@ proc flattenNestedDotExprCall(n: NimNode): seq[NimNode] =
 
   flattenNestedDotExprCallImpl n, result
 
+# impl -----------------------------------------
 
 proc validityCheck(nodes: seq[NimNode]) =
   for i, n in nodes:
@@ -74,23 +75,7 @@ proc iii(body: NimNode): NimNode =
 
   newEmptyNode()
 
-macro `:>`(D, body) =
+macro `:>`*(D, body) =
   iii body
 
-
-123 :> imap(1).ifilter(2).imax()
-123 :> imap(1).ifilter(2).imax(3)
-
-
-# -----------------------------------------
-
-# it has to be generic
-func imaxDefault[T](n: T): string =
-  ""
-
-# the return value indicates whether you should continue or not
-func imax[T](n: T, acc: var string): bool =
-  if n > acc.len:
-    acc = $n
-
-# -----------------------------------------
+export reducers

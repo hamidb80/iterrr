@@ -1,12 +1,32 @@
 # iterrr!
+iterate faster ... 🏎️
+
+## the problem
+
+
+## the solution
+
+your face after using this library is the one that this library use `:>` (a simple happy face - with 90deg rotation ofcourse).
+
+## concepts
 
 there are only 3 things in `iterrr`:
 1. imap
 2. ifilter
 3. [reducer]
 
-your face after using this library is the one that this library use `:>` (a simple happy face - with 90deg rotation ofcourse).
+the default reducer is `iseq` with converts the result to a sequence of that type.
 
+you can use other reducers, such as:
+* imax
+* imin
+* iHashSet
+* iLinkedList
+
+or you can define your own reducer.
+```nim
+## example of custom reducer
+```
 
 ## inspired by
 1. [zero_functional](https://github.com/zero-functional/zero-functional)
@@ -25,3 +45,11 @@ but there are features from `zero_functional` that is not covered yet:
 ## is it a replacement for `itertools`?
 not really, you can use them both together.
 `itertools` has lots of useful utilities.
+
+## wanna contribute?
+here are some suggestion:
+
+1. add benchmark 
+  * `std/sequtils` vs `iterrr`
+  * compare to other languages like Rust, Go, Haskell, ...
+2. suggest a solution to support converting to procedure
