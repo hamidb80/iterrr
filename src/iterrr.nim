@@ -1,52 +1,10 @@
 import std/[strutils, algorithm, options]
 import std/macros, macroplus
-import ./iterrr/reducers
+import ./iterrr/[reducers, utils]
 
 export reducers
 
-# utils -----------------------------------------
-
-template err(msg): untyped =
-  raise newException(ValueError, msg)
-
-
-proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
-  expectKind n, nnkCall
-
-  case n[0].kind:
-  of nnkDotExpr:
-    flattenNestedDotExprCallImpl n[0][0], acc
-
-    acc.add:
-      case n.len:
-      of 1: newCall n[0][1]
-      of 2: newCall n[0][1], n[1]
-      else: err "only 0 or 1 parameters can finalizer have"
-
-  of nnkIdent:
-    acc.add n
-
-  else:
-    error "invalid caller"
-
-proc flattenNestedDotExprCall(n: NimNode): seq[NimNode] =
-  ## imap(1).ifilter(2).imax()
-  ##
-  ## converts to >>>
-  ##
-  ## Call
-  ##   Ident "imap"
-  ##   IntLit 1
-  ## Call
-  ##   Ident "ifilter"
-  ##   IntLit 2
-  ## Call
-  ##   Ident "imax"
-
-  flattenNestedDotExprCallImpl n, result
-
-
-# impl -----------------------------------------
+# def ------------------------------------------
 
 type
   HigherOrderCallers = enum
@@ -65,6 +23,7 @@ type
     callChain: seq[HigherOrderCall]
     reducer: ReducerCall
 
+# impl -----------------------------------------
 
 proc formalize(nodes: seq[NimNode]): FormalizedChain =
   # TODO add `iseq` finalizer if it doesn't have any
@@ -77,7 +36,7 @@ proc formalize(nodes: seq[NimNode]): FormalizedChain =
       ):
       err "finalizer can only be last call: " & caller
 
-proc iii(iterableIsh, body: NimNode): NimNode =
+proc iterrrImpl(iterableIsh, body: NimNode): NimNode =
   let
     fff = formalize flattenNestedDotExprCall body
 
@@ -120,5 +79,7 @@ proc iii(iterableIsh, body: NimNode): NimNode =
 
     `accIdent`
 
+# broker ---------------------------------------
+
 macro `><`*(iterableIsh, body) =
-  iii iterableIsh, body
+  iterrrImpl iterableIsh, body
