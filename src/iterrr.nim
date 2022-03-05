@@ -1,4 +1,4 @@
-import std/[macros, strutils]
+import std/[macros, strutils, algorithm, options]
 import macroplus
 import ./iterrr/reducers
 
@@ -45,9 +45,30 @@ proc flattenNestedDotExprCall(n: NimNode): seq[NimNode] =
 
   flattenNestedDotExprCallImpl n, result
 
+
 # impl -----------------------------------------
 
-proc validityCheck(nodes: seq[NimNode]) =
+type
+  HigherOrderCallers = enum
+    hoMap
+    hoFilter
+
+  HigherOrderCall = object
+    kind: HigherOrderCallers
+    expr: NimNode
+
+  ReducerCall = object 
+    caller: string
+    defaultValue: Option[NimNode]
+
+  FormalizedChain = object
+    callChain: seq[HigherOrderCall]
+    reducer: ReducerCall
+
+
+proc formalize(nodes: seq[NimNode]): FormalizedChain =
+  # TODO add `iseq` finalizer if it doesn't have any
+
   for i, n in nodes:
     let caller = n[CallIdent].strVal.normalize
     if not (
@@ -58,15 +79,27 @@ proc validityCheck(nodes: seq[NimNode]) =
 
 proc iii(what, body: NimNode): NimNode =
   var
-    rs = flattenNestedDotExprCall body
+    accDef = newEmptyNode()
     loopBody = newStmtList()
 
-  # TODO add `iseq` finalizer if it doesn't have any
-  validityCheck rs
+  let 
+    fff = formalize flattenNestedDotExprCall body
+    accIdent = ident "acc"
+    mainLoopIdent = ident "mainLoop"
 
-  quote:
-    for it {.inject.} in `what`:
-      `loopBody`
+  for call in fff.callChain:
+    case:
+    of hoMap:
+      _
+    of hoFilter:
+      _
+
+  newBlockStmt quote do:
+    `accDef`
+
+    block `mainLoopIdent`:
+      for it {.inject.} in `what`:
+        `loopBody`
 
 
 macro `><`*(it, body) =

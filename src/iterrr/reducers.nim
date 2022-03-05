@@ -9,3 +9,10 @@ func imaxDefault*[T](n: T): string =
 func imax*[T](n: T, acc: var string): bool =
   if n > acc.len:
     acc = $n
+
+when false:
+  iall 
+  iany
+  imin
+  iLinkedList
+  iHashSet
