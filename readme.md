@@ -40,6 +40,9 @@ but there are features from `zero_functional` that is not covered yet:
   1. convert to function
   2. convert to iterator
 
+## **iterrr** vs `collect` from `std/suger`:
+you can use `iterrr` instead of `collect` macro I guess.
+
 ## is it a replacement for `itertools`?
 not really, you can use them both together.
 `itertools` has lots of useful utilities.

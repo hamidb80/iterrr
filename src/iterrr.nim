@@ -57,7 +57,7 @@ type
     kind: HigherOrderCallers
     param: NimNode
 
-  ReducerCall = object 
+  ReducerCall = object
     caller: NimNode
     defaultValue: Option[NimNode]
 
@@ -77,17 +77,17 @@ proc formalize(nodes: seq[NimNode]): FormalizedChain =
       ):
       err "finalizer can only be last call: " & caller
 
-proc iii(what, body: NimNode): NimNode =
-  let 
+proc iii(iterableIsh, body: NimNode): NimNode =
+  let
     fff = formalize flattenNestedDotExprCall body
-    
+
     accIdent = ident "acc"
     itIdent = ident "it"
     mainLoopIdent = ident "mainLoop"
     iredStateProcIdent = fff.reducer
     iredDefaultStateProcIdent = ident fff.reducer.caller.strval & "Default"
 
-  var 
+  var
     accDef = newEmptyNode()
     loopBody = quote:
       if not `iredStateProcIdent`(`accIdent`, `itIdent`):
@@ -97,7 +97,7 @@ proc iii(what, body: NimNode): NimNode =
   for call in fff.callChain.reversed:
     let p = call.param
 
-    loopBody = 
+    loopBody =
       case call.kind:
       of hoMap:
         quote:
@@ -115,10 +115,10 @@ proc iii(what, body: NimNode): NimNode =
     `accDef`
 
     block `mainLoopIdent`:
-      for `itIdent` in `what`:
+      for `itIdent` in `iterableIsh`:
         `loopBody`
 
     `accIdent`
 
-macro `><`*(it, body) =
-  iii it, body
+macro `><`*(iterableIsh, body) =
+  iii iterableIsh, body
