@@ -19,13 +19,13 @@ type
     caller: NimNode
     defaultValue: Option[NimNode]
 
-  FormalizedChain = object
+  IterrrPack = object
     callChain: seq[HigherOrderCall]
     reducer: ReducerCall
 
 # impl -----------------------------------------
 
-proc formalize(nodes: seq[NimNode]): FormalizedChain =
+proc formalize(nodes: seq[NimNode]): IterrrPack =
   # TODO add `iseq` finalizer if it doesn't have any
 
   for i, n in nodes:
@@ -38,13 +38,13 @@ proc formalize(nodes: seq[NimNode]): FormalizedChain =
 
 proc iterrrImpl(iterableIsh, body: NimNode): NimNode =
   let
-    fff = formalize flattenNestedDotExprCall body
+    ipack = formalize flattenNestedDotExprCall body
 
     accIdent = ident "acc"
     itIdent = ident "it"
     mainLoopIdent = ident "mainLoop"
-    iredStateProcIdent = fff.reducer
-    iredDefaultStateProcIdent = ident fff.reducer.caller.strval & "Default"
+    iredStateProcIdent = ipack.reducer
+    iredDefaultStateProcIdent = ident ipack.reducer.caller.strval & "Default"
 
   var
     accDef = newEmptyNode()
@@ -53,7 +53,7 @@ proc iterrrImpl(iterableIsh, body: NimNode): NimNode =
         break `mainLoopIdent`
 
 
-  for call in fff.callChain.reversed:
+  for call in ipack.callChain.reversed:
     let p = call.param
 
     loopBody =
