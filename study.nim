@@ -21,7 +21,7 @@ study "chain":
     var resultState = Default | iredDefault[typeof DerefedType]()
 
     block mainLoop:
-      for it {.inject.} in Iter:
+      for it in Iter:
         block: # new block introduces with a imap [to localize `it`]
           let it = Op
           if not ired(resultState, it):

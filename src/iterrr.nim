@@ -1,5 +1,5 @@
-import std/[macros, strutils, algorithm, options]
-import macroplus
+import std/[strutils, algorithm, options]
+import std/macros, macroplus
 import ./iterrr/reducers
 
 export reducers
@@ -55,10 +55,10 @@ type
 
   HigherOrderCall = object
     kind: HigherOrderCallers
-    expr: NimNode
+    param: NimNode
 
   ReducerCall = object 
-    caller: string
+    caller: NimNode
     defaultValue: Option[NimNode]
 
   FormalizedChain = object
@@ -78,29 +78,47 @@ proc formalize(nodes: seq[NimNode]): FormalizedChain =
       err "finalizer can only be last call: " & caller
 
 proc iii(what, body: NimNode): NimNode =
-  var
-    accDef = newEmptyNode()
-    loopBody = newStmtList()
-
   let 
     fff = formalize flattenNestedDotExprCall body
+    
     accIdent = ident "acc"
+    itIdent = ident "it"
     mainLoopIdent = ident "mainLoop"
+    iredStateProcIdent = fff.reducer
+    iredDefaultStateProcIdent = ident fff.reducer.caller.strval & "Default"
 
-  for call in fff.callChain:
-    case:
-    of hoMap:
-      _
-    of hoFilter:
-      _
+  var 
+    accDef = newEmptyNode()
+    loopBody = quote:
+      if not `iredStateProcIdent`(`accIdent`, `itIdent`):
+        break `mainLoopIdent`
+
+
+  for call in fff.callChain.reversed:
+    let p = call.param
+
+    loopBody = 
+      case call.kind:
+      of hoMap:
+        quote:
+          block:
+            let `itIdent` = `p`
+            `loopBody`
+
+      of hoFilter:
+        quote:
+          if `p`:
+            `loopBody`
+
 
   newBlockStmt quote do:
     `accDef`
 
     block `mainLoopIdent`:
-      for it {.inject.} in `what`:
+      for `itIdent` in `what`:
         `loopBody`
 
+    `accIdent`
 
 macro `><`*(it, body) =
   iii it, body
