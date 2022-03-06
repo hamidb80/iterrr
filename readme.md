@@ -22,15 +22,15 @@ and `>!<` for debug mode.
 the default reducer is `iseq` with converts the result to a sequence of that type.
 
 you can use other reducers, such as:
-* `iseq` :: [the default reducer]
-* `icount`
-* `imin`
-* `imax`
-* `iany`
-* `iall`
-* `iHashSet`
-* `iStrJoin`
-* **[or your custom reducer!]**
+* `iseq` [the default reducer] :: add results to a `seq`
+* `icount` :: count elements
+* `imin` :: calculate minimum
+* `imax` :: calculate maximum
+* `iany` :: like `any` from `std/sequtils`
+* `iall` :: like `all` from `std/sequtils`
+* `iHashSet` :: add results to a `HashSet`
+* `iStrJoin` :: like `join` from `std/strutils`
+* **[your custom reducer!]**
 
 ### define a custom reducer
 ```nim

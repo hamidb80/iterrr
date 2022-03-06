@@ -100,11 +100,11 @@ func iStrJoinInit*[T](): IStrJoinState = discard
 func iStrJoinInit*(separator: string): IStrJoinState =
   IStrJoinState(sep: separator)
 
-func iStrJoin*(res: var IStrJoinState, n: string): bool =
+func iStrJoin*[T](res: var IStrJoinState, s: T): bool =
   if res.acc == "":
-    res.acc = n
+    res.acc = $s
   else:
-    res.acc &= res.sep & n
+    res.acc &= res.sep & $s
 
   true
 
