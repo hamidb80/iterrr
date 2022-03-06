@@ -1,4 +1,4 @@
-import std/macros
+import std/[macros, sequtils]
 
 # conventions -----------------------
 
@@ -6,6 +6,16 @@ template err*(msg): untyped =
   raise newException(ValueError, msg)
 
 # meta programming ------------------
+
+proc replaceIdent*(root: NimNode, target, by: NimNode): NimNode =
+  if eqIdent(root, target):
+    by
+
+  else:
+    var croot = copyNimNode root
+    croot.add root.mapIt replaceIdent(it, target, by)
+    croot
+
 
 proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
   expectKind n, nnkCall

@@ -54,15 +54,6 @@ proc toIterrrPack(nodes: seq[NimNode]): IterrrPack =
   if not hasReducer:
     result.reducer = ReducerCall(caller: ident "iseq")
 
-proc replaceIdent(root: NimNode, target, by: NimNode): NimNode =
-  if eqIdent(root, target):
-    by
-
-  else:
-    var croot = copyNimNode root
-    croot.add root.mapIt replaceIdent(it, target, by)
-    croot
-
 proc detectType(iterIsh: NimNode, mapsParam: seq[NimNode]): NimNode =
   var target = inlineQuote default(typeof(`iterIsh`))
 
@@ -128,7 +119,7 @@ proc iterrrImpl(iterIsh, body: NimNode): NimNode =
 
     `reducerFinalizerProcIdent`(`accIdent`)
 
-# broker ---------------------------------------
+# macro ---------------------------------------
 
 macro `><`*(iterIsh, body): untyped =
   iterrrImpl iterIsh, body
