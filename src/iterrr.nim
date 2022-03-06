@@ -24,7 +24,7 @@ type
 
 # impl -----------------------------------------
 
-proc toIterrPack(nodes: seq[NimNode]): IterrrPack =
+proc toIterrrPack(nodes: seq[NimNode]): IterrrPack =
   var hasReducer = false
 
   for i, n in nodes:
@@ -73,7 +73,7 @@ proc detectType(iterIsh: NimNode, mapsParam: seq[NimNode]): NimNode =
 
 proc iterrrImpl(iterIsh, body: NimNode): NimNode =
   let
-    ipack = toIterrPack flattenNestedDotExprCall body
+    ipack = toIterrrPack flattenNestedDotExprCall body
 
     accIdent = ident "acc"
     itIdent = ident "it"

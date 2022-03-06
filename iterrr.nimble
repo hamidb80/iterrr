@@ -2,7 +2,7 @@
 
 version       = "0.0.1"
 author        = "hamidb80"
-description   = "write higher-order functions, get imperative style at compile time!"
+description   = "write higher-order functions, get imperative style instead at compile time!"
 license       = "MIT"
 srcDir        = "src"
 
