@@ -53,3 +53,7 @@ here are some suggestion:
 1. add benchmark 
   * `std/sequtils` vs `iterrr` vs `zero_functional`
   * compare to other languages like Rust, Go, Haskell, ...
+
+
+## with special thanks to:
+* [beef](https://github.com/beef331): who helped me a lot in my Nim journey
