@@ -57,7 +57,7 @@ suite "reducers":
       [true, true, true].items >< iall() == true
 
   test "istrJoin":
-    check (1..4 >< imap($it).iStrJoin(":")) == "1:2:3:4"
+    check (1..4 >< iStrJoin(";")) == "1;2;3;4"
 
   test "iHashSet":
     check (-5..5 >< imap(abs it).iHashSet()) == toHashSet toseq 0..5

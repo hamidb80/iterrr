@@ -41,7 +41,7 @@ you can use other reducers, such as:
 1. [zero_functional](https://github.com/zero-functional/zero-functional)
 2. [itertools](https://github.com/narimiran/itertools)
 3. [slicerator](https://github.com/beef331/slicerator)
-4. [Xflywind's comment on this issue](https://github.com/nim-lang/Nim/issues/18405#issuecomment-888391521)
+4. [xflywind's comment on this issue](https://github.com/nim-lang/Nim/issues/18405#issuecomment-888391521)
 
 ## **iterrr** vs `zero_functional`:
 `iterrr` targets the same problem as `zero_functional`, 
