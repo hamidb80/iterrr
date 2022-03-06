@@ -1,3 +1,12 @@
+import std/[macros, options]
+
+template rangeError(): untyped =
+  raise newException(RangeDefect, "finding minimum between 0 elements")
+
+template ignoreType*(T) = discard
+
+# --------------------------------------
+
 func iseqInit*[T](): seq[T] =
   newseq[T]()
 
@@ -10,36 +19,41 @@ template iseqFinalizer*(n): untyped =
 
 # --------------------------------------
 
-func iminInit*[T](): T =
-  T.low
+func iminInit*[T](): Option[T] =
+  none T
 
-func imin*[T](maxSoFar: var T, n: T): bool =
-  if n > maxSoFar:
-    maxSoFar = n
+func imin*[T](res: var Option[T], n: T): bool =
+  if (isNone res) or (res.get > n):
+    res = some n
+
   true
 
-template iminFinalizer*(n): untyped =
-  n
+func iminFinalizer*[T](res: var Option[T]): T =
+  if issome res: res.get
+  else: rangeError()
 
 # --------------------------------------
 
-func imaxInit*[T](): T =
-  T.low
+func imaxInit*[T](): Option[T] =
+  none T
 
-func imax*[T](maxSoFar: var T, n: T): bool =
-  if n > maxSoFar:
-    maxSoFar = n
+func imax*[T](res: var Option[T], n: T): bool =
+  if (isNone res) or (res.get < n):
+    res = some n
+
   true
 
-template imaxFinalizer*(n): untyped =
-  n
+func imaxFinalizer*[T](res: var Option[T]): T =
+  if issome res: res.get
+  else: rangeError()
 
 # --------------------------------------
 
 func ianyInit*[T](): bool =
+  ignoreType T
   false
 
-func iany*[T](res: var bool, n: bool): bool =
+func iany*(res: var bool, n: bool): bool =
   if n:
     res = true
     false
@@ -53,9 +67,10 @@ template ianyFinalizer*(n): untyped =
 # --------------------------------------
 
 func iallInit*[T](): bool =
+  ignoreType T
   true
 
-func iall*[T](res: var bool, n: bool): bool =
+func iall*(res: var bool, n: bool): bool =
   if n:
     true
 

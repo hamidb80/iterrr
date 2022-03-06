@@ -82,7 +82,6 @@ proc iterrrImpl(iterIsh, body: NimNode): NimNode =
     reducerFinalizerProcIdent = ident ipack.reducer.caller.strVal & "Finalizer"
     reducerInitProcIdent = ident ipack.reducer.caller.strval & "Init"
 
-  var
     accDef =
       if ipack.reducer.params.len > 0:
         var reducerInitCall = newCall(reducerInitProcIdent)
@@ -98,8 +97,7 @@ proc iterrrImpl(iterIsh, body: NimNode): NimNode =
         quote:
           var `accIdent` = `reducerInitProcIdent`[`dtype`]()
 
-
-    loopBody = quote:
+  var loopBody = quote:
       if not `reducerStateUpdaterProcIdent`(`accIdent`, `itIdent`):
         break `mainLoopIdent`
 
