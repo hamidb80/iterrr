@@ -1,7 +1,10 @@
-import std/[macros, unittest]
+import std/[unittest, tables]
 import iterrr
 
 
-echo 1..20 >< imap(it * it).ifilter(it > 10)
+test "HSlice":
+  echo 1..20 >< imap(it * it).ifilter(it > 10).imax()
 
-# 123 :> imap(1).ifilter(2).imax(3)
+test "table":
+  let t = toTable {"a": 1, "b": 2, "c": 3, "d": 4}
+  echo t.keys >< iStrJoin(",")

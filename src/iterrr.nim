@@ -1,4 +1,4 @@
-import std/[strutils, sequtils, algorithm, options]
+import std/[strutils, sequtils, algorithm]
 import std/macros, macroplus
 import ./iterrr/[reducers, utils]
 
@@ -16,7 +16,7 @@ type
 
   ReducerCall = object
     caller: NimNode
-    defaultValue: Option[NimNode]
+    params: seq[NimNode]
 
   IterrrPack = object
     callChain: seq[HigherOrderCall]
@@ -24,14 +24,6 @@ type
 
 # impl -----------------------------------------
 
-proc getFirstArg(n: NimNode): NimNode =
-  n[CallArgs][0]
-
-proc getFirstArgIfExists(n: NimNode): Option[NimNode] =
-  if n[CallArgs].len == 0:
-    none NimNode
-  else:
-    some getFirstArg n
 
 proc formalize(nodes: seq[NimNode]): IterrrPack =
   var hasReducer = false
@@ -42,7 +34,7 @@ proc formalize(nodes: seq[NimNode]): IterrrPack =
     template addToCallChain(higherOrderKind): untyped =
       result.callChain.add HigherOrderCall(
           kind: higherOrderKind,
-          param: getFirstArg n)
+          param: n[CallArgs][0])
 
     case caller:
     of "imap":
@@ -55,7 +47,7 @@ proc formalize(nodes: seq[NimNode]): IterrrPack =
       hasReducer = true
       result.reducer = ReducerCall(
           caller: ident caller,
-          defaultValue: getFirstArgIfExists n)
+          params: n[CallArgs])
 
     else:
       err "finalizer can only be last call: " & caller
@@ -76,7 +68,7 @@ proc replaceIdent(root: NimNode, target, by: NimNode): NimNode =
     croot
 
 proc derefType(iterIsh: NimNode, mapsParam: seq[NimNode]): NimNode =
-  var target = inlineQuote default typeof `iterIsh`
+  var target = inlineQuote default(typeof(`iterIsh`))
 
   for operation in mapsParam:
     target = replaceIdent(operation, ident "it", target)
@@ -91,14 +83,19 @@ proc iterrrImpl(iterIsh, body: NimNode): NimNode =
     itIdent = ident "it"
     mainLoopIdent = ident "mainLoop"
     iredStateProcIdent = ipack.reducer.caller
+    iredFinalizerProcIdent = ident ipack.reducer.caller.strVal & "Finalizer"
     iredDefaultProcIdent = ident ipack.reducer.caller.strval & "Default"
 
   var
     accDef =
-      if isSome ipack.reducer.defaultValue:
-        let val = ipack.reducer.defaultValue
+      if ipack.reducer.params.len > 0:
+        var c = newCall(iredDefaultProcIdent)
+        c.add ipack.reducer.params
+
+        let dfcall = c
+
         quote:
-          var `accIdent` = `val`
+          var `accIdent` = `dfcall`
 
       else:
         let dtype = derefType iterIsh:
@@ -137,7 +134,7 @@ proc iterrrImpl(iterIsh, body: NimNode): NimNode =
       for `itIdent` in `iterIsh`:
         `loopBody`
 
-    `accIdent`
+    `iredFinalizerProcIdent`(`accIdent`)
 
 # broker ---------------------------------------
 
