@@ -24,7 +24,6 @@ type
 
 # impl -----------------------------------------
 
-
 proc toIterrPack(nodes: seq[NimNode]): IterrrPack =
   var hasReducer = false
 
