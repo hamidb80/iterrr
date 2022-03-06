@@ -3,8 +3,6 @@ import std/[macros, options]
 template rangeError(): untyped =
   raise newException(RangeDefect, "finding minimum between 0 elements")
 
-template ignoreType*(T) = discard
-
 # --------------------------------------
 
 func iseqInit*[T](): seq[T] =
@@ -50,7 +48,6 @@ func imaxFinalizer*[T](res: var Option[T]): T =
 # --------------------------------------
 
 func ianyInit*[T](): bool =
-  ignoreType T
   false
 
 func iany*(res: var bool, n: bool): bool =
@@ -67,7 +64,6 @@ template ianyFinalizer*(n): untyped =
 # --------------------------------------
 
 func iallInit*[T](): bool =
-  ignoreType T
   true
 
 func iall*(res: var bool, n: bool): bool =
