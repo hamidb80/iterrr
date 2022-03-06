@@ -5,15 +5,13 @@ template rangeError(): untyped =
 
 # --------------------------------------
 
-func iseqInit*[T](): seq[T] =
-  newseq[T]()
+func iseqInit*[T](): seq[T] = newseq[T]()
 
 func iseq*[T](acc: var seq[T], n: T): bool =
   acc.add n
   true
 
-template iseqFinalizer*(n): untyped =
-  n
+template iseqFinalizer*(n): untyped = n
 
 # --------------------------------------
 
@@ -27,8 +25,7 @@ template icountFinalizer*(n): untyped = n
 
 # --------------------------------------
 
-func iminInit*[T](): Option[T] =
-  none T
+func iminInit*[T](): Option[T] = none T
 
 func imin*[T](res: var Option[T], n: T): bool =
   if (isNone res) or (res.get > n):
@@ -42,8 +39,7 @@ func iminFinalizer*[T](res: var Option[T]): T =
 
 # --------------------------------------
 
-func imaxInit*[T](): Option[T] =
-  none T
+func imaxInit*[T](): Option[T] = none T
 
 func imax*[T](res: var Option[T], n: T): bool =
   if (isNone res) or (res.get < n):
@@ -57,8 +53,7 @@ func imaxFinalizer*[T](res: var Option[T]): T =
 
 # --------------------------------------
 
-func ianyInit*[T](): bool =
-  false
+func ianyInit*[T](): bool = false
 
 func iany*(res: var bool, n: bool): bool =
   if n:
@@ -68,13 +63,11 @@ func iany*(res: var bool, n: bool): bool =
   else:
     true
 
-template ianyFinalizer*(n): untyped =
-  n
+template ianyFinalizer*(n): untyped = n
 
 # --------------------------------------
 
-func iallInit*[T](): bool =
-  true
+func iallInit*[T](): bool = true
 
 func iall*(res: var bool, n: bool): bool =
   if n:
@@ -84,29 +77,25 @@ func iall*(res: var bool, n: bool): bool =
     res = false
     false
 
-template iallFinalizer*(n): untyped =
-  n
+template iallFinalizer*(n): untyped = n
 
 # --------------------------------------
 import std/sets
 
-func iHashSetInit*[T](): HashSet[T] =
-  initHashSet[T]()
+func iHashSetInit*[T](): HashSet[T] = initHashSet[T]()
 
 func iHashSet*[T](res: var HashSet[T], n: T): bool =
   res.incl n
   true
 
-template iHashSetFinalizer*(n): untyped =
-  n
+template iHashSetFinalizer*(n): untyped = n
 
 # --------------------------------------
 
 type IStrJoinState = object
   sep, acc: string
 
-func iStrJoinInit*[T](): IStrJoinState =
-  result
+func iStrJoinInit*[T](): IStrJoinState = discard
 
 func iStrJoinInit*(separator: string): IStrJoinState =
   IStrJoinState(sep: separator)
@@ -119,5 +108,4 @@ func iStrJoin*(res: var IStrJoinState, n: string): bool =
 
   true
 
-template iStrJoinFinalizer*(n): untyped =
-  n.acc
+template iStrJoinFinalizer*(n): untyped = n.acc
