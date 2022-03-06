@@ -1,5 +1,6 @@
 # iterrr!
-iterate faster ... 🏎️
+iterate faster ... 🏎️.
+write higher-order functions, get its imperative style at the compile time!
 
 ## The Problem
 
@@ -43,18 +44,20 @@ you can use other reducers, such as:
 3. [slicerator](https://github.com/beef331/slicerator)
 4. [xflywind's comment on this issue](https://github.com/nim-lang/Nim/issues/18405#issuecomment-888391521)
 
-## **iterrr** VS `zero_functional`:
+
+## Common Questions:
+### **iterrr** VS `zero_functional`:
 `iterrr` targets the same problem as `zero_functional`, 
 while being better at:
   1. extensibility
   2. using less meta programming
   3. compilation time
 
-## **iterrr** VS `collect` from `std/suger`:
+### **iterrr** VS `collect` from `std/suger`:
 you can use `iterrr` instead of `collect`. 
 you don't miss anything.
 
-## is it a replacement for `itertools`?
+### Is it a replacement for `itertools`?
 not really, you can use them both together.
 `itertools` has lots of useful iterators.
 

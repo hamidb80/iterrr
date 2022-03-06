@@ -13,7 +13,7 @@ suite "chain generation":
 
     check res == "a: 1, b: 2, c: 3"
 
-  test "multi imap and ifilters":
+  test "complex chain":
     let res =
       -2..4 ><
         imap($it)
