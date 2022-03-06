@@ -2,7 +2,7 @@
 
 version       = "0.0.1"
 author        = "hamidb80"
-description   = "write higher-order functions, get imperative style instead at compile time!"
+description   = "iterate faster ... 🏎️"
 license       = "MIT"
 srcDir        = "src"
 
