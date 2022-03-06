@@ -10,25 +10,16 @@ template iseqFinalizer*(n): untyped =
 
 # --------------------------------------
 
-type IStrJoinState = tuple
-  sep, acc: string
+func iminDefault*[T](): T =
+  T.low
 
-func iStrJoinDefault*(n1: string): IStrJoinState =
-  (n1, "")
-
-func iStrJoinDefault*[T](): IStrJoinState =
-  ("", "")
-
-func iStrJoin*(rs: var IStrJoinState, n: string): bool =
-  if rs.acc == "":
-    rs.acc = n
-  else:
-    rs.acc &= rs.sep & n
-
+func imin*[T](maxSoFar: var T, n: T): bool =
+  if n > maxSoFar:
+    maxSoFar = n
   true
 
-template iStrJoinFinalizer*(n): untyped =
-  n.acc
+template iminFinalizer*(n): untyped =
+  n
 
 # --------------------------------------
 
@@ -41,19 +32,6 @@ func imax*[T](maxSoFar: var T, n: T): bool =
   true
 
 template imaxFinalizer*(n): untyped =
-  n
-
-# --------------------------------------
-
-func iminDefault*[T](): T =
-  T.low
-
-func imin*[T](maxSoFar: var T, n: T): bool =
-  if n > maxSoFar:
-    maxSoFar = n
-  true
-
-template iminFinalizer*(n): untyped =
   n
 
 # --------------------------------------
@@ -85,12 +63,10 @@ func iall*[T](res: var bool, n: bool): bool =
     res = false
     false
 
-
 template iallFinalizer*(n): untyped =
   n
 
 # --------------------------------------
-
 import std/sets
 
 func iHashSetDefault*[T](): HashSet[T] =
@@ -102,3 +78,25 @@ func iHashSet*[T](res: var HashSet[T], n: T): bool =
 
 template iHashSetFinalizer*(n): untyped =
   n
+
+# --------------------------------------
+
+type IStrJoinState = object
+  sep, acc: string
+
+func iStrJoinDefault*[T](): IStrJoinState =
+  result
+
+func iStrJoinDefault*(separator: string): IStrJoinState =
+  IStrJoinState(sep: separator)
+
+func iStrJoin*(res: var IStrJoinState, n: string): bool =
+  if res.acc == "":
+    res.acc = n
+  else:
+    res.acc &= res.sep & n
+
+  true
+
+template iStrJoinFinalizer*(n): untyped =
+  n.acc
