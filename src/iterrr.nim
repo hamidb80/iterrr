@@ -97,12 +97,12 @@ proc iterrrImpl(iterIsh, body: NimNode): NimNode =
         quote:
           var `accIdent` = `reducerInitProcIdent`[`dtype`]()
 
+
   var loopBody = quote:
       if not `reducerStateUpdaterProcIdent`(`accIdent`, `itIdent`):
         break `mainLoopIdent`
 
-
-  for i, call in ipack.callChain.reversed:
+  for call in ipack.callChain.reversed:
     let p = call.param
 
     loopBody =
