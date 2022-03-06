@@ -41,9 +41,3 @@ proc flattenNestedDotExprCall*(n: NimNode): seq[NimNode] =
   ##   Ident "imax"
 
   flattenNestedDotExprCallImpl n, result
-
-# ---------------------------------
-
-proc dumpReprAndReturn*(n: NimNode): NimNode =
-  echo repr n
-  n

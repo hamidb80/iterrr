@@ -25,7 +25,7 @@ type
 # impl -----------------------------------------
 
 
-proc formalize(nodes: seq[NimNode]): IterrrPack =
+proc toIterrPack(nodes: seq[NimNode]): IterrrPack =
   var hasReducer = false
 
   for i, n in nodes:
@@ -67,7 +67,7 @@ proc replaceIdent(root: NimNode, target, by: NimNode): NimNode =
     
     croot
 
-proc derefType(iterIsh: NimNode, mapsParam: seq[NimNode]): NimNode =
+proc detectType(iterIsh: NimNode, mapsParam: seq[NimNode]): NimNode =
   var target = inlineQuote default(typeof(`iterIsh`))
 
   for operation in mapsParam:
@@ -77,19 +77,19 @@ proc derefType(iterIsh: NimNode, mapsParam: seq[NimNode]): NimNode =
 
 proc iterrrImpl(iterIsh, body: NimNode): NimNode =
   let
-    ipack = formalize flattenNestedDotExprCall body
+    ipack = toIterrPack flattenNestedDotExprCall body
 
     accIdent = ident "acc"
     itIdent = ident "it"
     mainLoopIdent = ident "mainLoop"
-    iredStateProcIdent = ipack.reducer.caller
-    iredFinalizerProcIdent = ident ipack.reducer.caller.strVal & "Finalizer"
-    iredDefaultProcIdent = ident ipack.reducer.caller.strval & "Default"
+    reducerStateProcIdent = ipack.reducer.caller
+    reducerFinalizerProcIdent = ident ipack.reducer.caller.strVal & "Finalizer"
+    reducerDefaultProcIdent = ident ipack.reducer.caller.strval & "Default"
 
   var
     accDef =
       if ipack.reducer.params.len > 0:
-        var c = newCall(iredDefaultProcIdent)
+        var c = newCall(reducerDefaultProcIdent)
         c.add ipack.reducer.params
 
         let dfcall = c
@@ -98,15 +98,15 @@ proc iterrrImpl(iterIsh, body: NimNode): NimNode =
           var `accIdent` = `dfcall`
 
       else:
-        let dtype = derefType iterIsh:
+        let dtype = detectType iterIsh:
           ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
 
         quote:
-          var `accIdent` = `iredDefaultProcIdent`[`dtype`]()
+          var `accIdent` = `reducerDefaultProcIdent`[`dtype`]()
 
 
     loopBody = quote:
-      if not `iredStateProcIdent`(`accIdent`, `itIdent`):
+      if not `reducerStateProcIdent`(`accIdent`, `itIdent`):
         break `mainLoopIdent`
 
 
@@ -127,16 +127,22 @@ proc iterrrImpl(iterIsh, body: NimNode): NimNode =
             `loopBody`
 
 
-  dumpReprAndReturn newBlockStmt quote do:
+  newBlockStmt quote do:
     `accDef`
 
     block `mainLoopIdent`:
       for `itIdent` in `iterIsh`:
         `loopBody`
 
-    `iredFinalizerProcIdent`(`accIdent`)
+    `reducerFinalizerProcIdent`(`accIdent`)
 
 # broker ---------------------------------------
 
 macro `><`*(iterIsh, body): untyped =
   iterrrImpl iterIsh, body
+
+macro `>!<`*(iterIsh, body): untyped =
+  result = iterrrImpl(iterIsh, body)
+  echo "-----------------"
+  echo repr result
+  echo "-----------------"
