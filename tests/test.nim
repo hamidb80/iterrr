@@ -6,7 +6,7 @@ test "HSlice":
   echo 1..20 >< imap(it * it).ifilter(it > 10).imax()
 
 test "HashSet":
-  echo -5..5 >< imap(abs it).iHashSet()
+  echo -5..5 >!< imap(abs it).iHashSet()
 
 test "Table":
   let t = toTable {"a": 1, "b": 2, "c": 3, "d": 4}

@@ -6,6 +6,10 @@ iterate faster ... 🏎️
 
 ## The Solution
 
+## usage
+use `><` for normal.
+and `>!<` for debug mode.
+
 ## Concepts
 
 **there are only 3 things in `iterrr`**:

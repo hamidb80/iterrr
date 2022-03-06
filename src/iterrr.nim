@@ -58,13 +58,10 @@ proc toIterrPack(nodes: seq[NimNode]): IterrrPack =
 proc replaceIdent(root: NimNode, target, by: NimNode): NimNode =
   if eqIdent(root, target):
     by
-  
+
   else:
     var croot = copyNimNode root
-
-    for n in root:
-      croot.add replaceIdent(n, target, by)
-    
+    croot.add root.mapIt replaceIdent(it, target, by)
     croot
 
 proc detectType(iterIsh: NimNode, mapsParam: seq[NimNode]): NimNode =
@@ -72,8 +69,8 @@ proc detectType(iterIsh: NimNode, mapsParam: seq[NimNode]): NimNode =
 
   for operation in mapsParam:
     target = replaceIdent(operation, ident "it", target)
-  
-  inlineQuote typeof `target` 
+
+  inlineQuote typeof(`target`)
 
 proc iterrrImpl(iterIsh, body: NimNode): NimNode =
   let
@@ -82,31 +79,29 @@ proc iterrrImpl(iterIsh, body: NimNode): NimNode =
     accIdent = ident "acc"
     itIdent = ident "it"
     mainLoopIdent = ident "mainLoop"
-    reducerStateProcIdent = ipack.reducer.caller
+    reducerStateUpdaterProcIdent = ipack.reducer.caller
     reducerFinalizerProcIdent = ident ipack.reducer.caller.strVal & "Finalizer"
-    reducerDefaultProcIdent = ident ipack.reducer.caller.strval & "Default"
+    reducerInitProcIdent = ident ipack.reducer.caller.strval & "Init"
 
   var
     accDef =
       if ipack.reducer.params.len > 0:
-        var c = newCall(reducerDefaultProcIdent)
-        c.add ipack.reducer.params
-
-        let dfcall = c
+        var reducerInitCall = newCall(reducerInitProcIdent)
+        reducerInitCall.add ipack.reducer.params
 
         quote:
-          var `accIdent` = `dfcall`
+          var `accIdent` = `reducerInitCall`
 
       else:
         let dtype = detectType iterIsh:
           ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
 
         quote:
-          var `accIdent` = `reducerDefaultProcIdent`[`dtype`]()
+          var `accIdent` = `reducerInitProcIdent`[`dtype`]()
 
 
     loopBody = quote:
-      if not `reducerStateProcIdent`(`accIdent`, `itIdent`):
+      if not `reducerStateUpdaterProcIdent`(`accIdent`, `itIdent`):
         break `mainLoopIdent`
 
 
@@ -143,6 +138,6 @@ macro `><`*(iterIsh, body): untyped =
 
 macro `>!<`*(iterIsh, body): untyped =
   result = iterrrImpl(iterIsh, body)
-  echo "-----------------"
+  echo "## ", repr(iterIsh), " >< ", repr(body)
   echo repr result
-  echo "-----------------"
+  echo "---------------------------------------"
