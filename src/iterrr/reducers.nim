@@ -17,6 +17,16 @@ template iseqFinalizer*(n): untyped =
 
 # --------------------------------------
 
+func icountInit*[T](): int = 0
+
+func icount*[T](acc: var int, _: T): bool =
+  inc acc
+  true
+
+template icountFinalizer*(n): untyped = n
+
+# --------------------------------------
+
 func iminInit*[T](): Option[T] =
   none T
 

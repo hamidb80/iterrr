@@ -29,6 +29,9 @@ suite "reducers":
     emptyIntList = newseq[int]()
     emptyBoolList = newseq[bool]()
 
+  test "icount":
+    check (1..20 >< icount()) == 20
+
   test "imin":
     doAssertRaises RangeDefect:
       discard emptyIntList.items >< imin()

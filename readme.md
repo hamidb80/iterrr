@@ -23,6 +23,7 @@ the default reducer is `iseq` with converts the result to a sequence of that typ
 
 you can use other reducers, such as:
 * `iseq` :: [the default reducer]
+* `icount`
 * `imin`
 * `imax`
 * `iany`

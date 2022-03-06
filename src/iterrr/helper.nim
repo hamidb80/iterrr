@@ -1,4 +1,5 @@
 import std/[macros, sequtils]
+import macroplus
 
 # conventions -----------------------
 
