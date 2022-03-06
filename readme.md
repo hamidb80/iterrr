@@ -27,8 +27,8 @@ you can use other reducers, such as:
 * `imax`
 * `iany`
 * `iall`
-* `iStrJoin`
 * `iHashSet`
+* `iStrJoin`
 * **[or your custom reducer!]**
 
 ### define a custom reducer
@@ -60,7 +60,7 @@ not really, you can use them both together.
 ## Wanna Contribute?
 **here are some suggestion:**
 
-* add benchmark 
+* add benchmark
   1. `iterrr` vs `std/sequtils` vs `zero_functional`
   2. compare to other languages like Rust, Go, Haskell, ...
 
