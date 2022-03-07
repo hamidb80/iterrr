@@ -2,6 +2,10 @@
 iterate faster ... 🏎️.
 write higher-order functions, get its imperative style at the compile time!
 
+# Table of Contents
+1. [The]
+
+
 # TODO 
 add table of content
 if you know the problem, just jump to usage
@@ -77,7 +81,7 @@ block mainLoop:
 iseqFinalizer acc
 ```
 
-it's as clean is hand-written code, but it's good enough.
+it's not as clean as hand-written code, but it's good enough.
 
 ## Usage
 ### syntax
@@ -91,8 +95,8 @@ iterable >< imap(operation).ifilter(cond).[reducer(args...)]
 you can chain as many `imap` and `ifilter` as you want. but there is **only one** reducer.
 
 ### Main Entities:
-1. **imap** :: like `mapIt` from `std/sequtils`
-2. **ifilter** :: like `filterIt` from `std/sequtils`
+1. **imap** :: similar to `mapIt` from `std/sequtils`
+2. **ifilter** :: similar to `filterIt` from `std/sequtils`
 3. **[reducer]**
 
 **NOTE**: the prefix `i` is just a convention.
@@ -104,10 +108,10 @@ you can use other reducers, such as:
 * `icount` :: count elements
 * `imin` :: calculate minimum
 * `imax` :: calculate maximum
-* `iany` :: like `any` from `std/sequtils`
-* `iall` :: like `all` from `std/sequtils`
+* `iany` :: similar to `any` from `std/sequtils`
+* `iall` :: similar to `all` from `std/sequtils`
 * `iHashSet` :: add results to a `HashSet`
-* `iStrJoin` :: like `join` from `std/strutils`
+* `iStrJoin` :: similar to `join` from `std/strutils`
 * **[your custom reducer!]**
 
 **NOTE**: see usage in `tests/test.nim`
@@ -118,6 +122,18 @@ let xmax = flatPoints.pairs >< ifilter(it[0] mod 2 == 0).imap(it[1]).imax()
 ```
 
 did you noticed that I've just used `pairs` iterator? isn't that amazing?
+
+
+### Limitation
+you have to specify the iterator for `seq` and other iterable objects [`HSlice` is an exception]
+
+i mean:
+```nim
+let s = [1, 2, 3]
+echo s >< imap($it) # doesn't work
+echo s.items >< imap($it) # work fine
+echo s.pairs >< imap($it) # work fine
+```
 
 ### Define A Custom Reducer
 **every reducer have**:
@@ -132,7 +148,6 @@ did you noticed that I've just used `pairs` iterator? isn't that amazing?
 2. [itertools](https://github.com/narimiran/itertools)
 3. [slicerator](https://github.com/beef331/slicerator)
 4. [xflywind's comment on this issue](https://github.com/nim-lang/Nim/issues/18405#issuecomment-888391521)
-
 
 ## Common Questions:
 ### **iterrr** VS `zero_functional`:
