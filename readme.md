@@ -110,6 +110,8 @@ you can use other reducers, such as:
 * `iStrJoin` :: like `join` from `std/strutils`
 * **[your custom reducer!]**
 
+**NOTE**: see usage in `tests/test.nim`
+
 here's how you can get maximum x, when `flatPoints` is: `[x0, y0, x1, y1, x2, y2, ...]`
 ```nim
 let xmax = flatPoints.pairs >< ifilter(it[0] mod 2 == 0).imap(it[1]).imax()
@@ -121,9 +123,9 @@ did you noticed that I've just used `pairs` iterator? isn't that amazing?
 **every reducer have**:
 1. `iseqInit[T](args...): ...` :: initialize the value of accumulator :: must be generic, can have 0 or more args
 2. `iseq(var acc, newValue): bool` :: updates the state value, if returns false, the iteration stops
-3. `iseqFinalizer(n): ...` :: returns the result value of accumulator. see `imax` or `imin` implmentaion in `iterrr/reducers.nim`.
+3. `iseqFinalizer(n): ...` :: returns the result value of accumulator.
 
-you can see details in `iterrr/reducers.nim`
+**NOTE**: see examples in `src/iterrr/reducers.nim`
 
 ## Inspirations
 1. [zero_functional](https://github.com/zero-functional/zero-functional)
