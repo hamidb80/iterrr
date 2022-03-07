@@ -151,11 +151,11 @@ echo s.pairs >< imap($it) # works fine
 
 ### Define A Custom Reducer
 **every reducer have**: [let't name our custom reducer `zzz`]
-1. `zzzInit[T](args...): ...` :: initializes the value of accumulator(state) :: must be *generic*, can have 0 or more args
-2. `zzz(var acc, newValue): bool` :: updates the accumulator value, if returns false, the iteration stops
-3. `zzzFinalizer(n): ...` :: returns the result value of the accumulator.
+1. `zzzInit[T](args...): ...` :: initializes the value of accumulator(state) :: must be *generic*, can have 0 or more args.
+2. `zzz(var acc, newValue): bool` :: updates the accumulator based on `newValue`, if returns false, the iteration stops.
+3. `zzzFinalizer(n): ...` :: returns the result of the accumulator.
 
-**NOTE**: see examples in `src/iterrr/reducers.nim`
+**NOTE**: see implementations in `src/iterrr/reducers.nim`
 
 ## Inspirations
 1. [zero_functional](https://github.com/zero-functional/zero-functional)
