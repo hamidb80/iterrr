@@ -125,8 +125,8 @@ i mean:
 ```nim
 let s = [1, 2, 3]
 echo s >< imap($it) # doesn't work
-echo s.items >< imap($it) # work fine
-echo s.pairs >< imap($it) # work fine
+echo s.items >< imap($it) # works fine
+echo s.pairs >< imap($it) # works fine
 ```
 
 ### Define A Custom Reducer
