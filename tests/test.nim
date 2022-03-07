@@ -13,9 +13,9 @@ suite "chain generation":
 
     check res == "a: 1, b: 2, c: 3"
 
-  test "complex chain":
+  test "long chain":
     let res =
-      -2..4 ><
+      [-2, -1, 0, 1, 2].items ><
         imap($it)
         .ifilter(it != "0")
         .ifilter('-' in it)
@@ -23,9 +23,25 @@ suite "chain generation":
 
     check res == @[-2, -1]
 
+suite "custom ident":
+  test "== 1":
+    check (1..10 >< ifilter[i](i < 5)) == @[1, 2, 3, 4]
+
+  test "> 1":
+    check (1..10 >< ifilter[i](i <= 5)) == toseq 1..5
+    check ("hello".pairs >< imap[i, c](i + ord(c))) == @[104, 102, 110, 111, 115]
+
+  test "long chain":
+    let res = 1..30 ><
+      imap[n]($n)
+      .ifilter[s](s.len == 1)
+      .imap[s](parseInt s)
+
+    check res == toseq 1..9
+
 
 suite "reducers":
-  let 
+  let
     emptyIntList = newseq[int]()
     emptyBoolList = newseq[bool]()
 
