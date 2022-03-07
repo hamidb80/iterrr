@@ -120,7 +120,7 @@ did you noticed that I've just used iterators?
 ### Custom Idents ?!?
 using just `it` in `mapIt` and `filterIt` is just ... and makes code a little unreadable.
 
-#### but remember these principles when using custom ident:
+#### remember these principles when using custom ident:
 1. if there was not custom idents, `it` is assumed
 2. if there was only 1 custom ident, the custom ident is replaced with `it`
 3. if there was more than 1 custom idents, `it` is unpacked 
