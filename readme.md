@@ -170,7 +170,7 @@ while being better at:
   1. extensibility
   2. using less meta programming
 
-and also have smaller core size.
+and it also has smaller core.
 
 ### `iterrr` VS `collect` from `std/suger`:
 you can use `iterrr` instead of `collect`. 
