@@ -9,13 +9,13 @@ suite "chain generation":
   test "Table.pairs -> _":
     let
       t = newOrderedTable {"a": 1, "b": 2, "c": 3}
-      res = t.pairs >< imap(fmt"{it[0]}: {it[1]}").iStrJoin(", ")
+      res = t.pairs >!< imap(fmt"{it[0]}: {it[1]}").iStrJoin(", ")
 
     check res == "a: 1, b: 2, c: 3"
 
-  test "complex chain":
+  test "long chain":
     let res =
-      -2..4 ><
+      [-2, -1, 0, 1, 2].items ><
         imap($it)
         .ifilter(it != "0")
         .ifilter('-' in it)
@@ -23,9 +23,19 @@ suite "chain generation":
 
     check res == @[-2, -1]
 
+suite "custom ident":
+  test "1":
+    discard
+
+  test "2":
+    discard
+
+  test "3":
+    discard
+
 
 suite "reducers":
-  let 
+  let
     emptyIntList = newseq[int]()
     emptyBoolList = newseq[bool]()
 

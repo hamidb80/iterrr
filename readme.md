@@ -144,13 +144,13 @@ echo s.pairs >< imap($it) # works fine
 4. [xflywind's comment on this issue](https://github.com/nim-lang/Nim/issues/18405#issuecomment-888391521)
 
 ## Common Questions:
-### **iterrr** VS `zero_functional`:
+### `iterrr` VS `zero_functional`:
 `iterrr` targets the same problem as `zero_functional`, 
 while being better at:
   1. extensibility
   2. using less meta programming
 
-### **iterrr** VS `collect` from `std/suger`:
+### `iterrr` VS `collect` from `std/suger`:
 you can use `iterrr` instead of `collect`. 
 you don't miss anything.
 
