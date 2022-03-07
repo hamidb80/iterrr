@@ -132,9 +132,9 @@ Yes, you can do it!
    
 for example:
 ```nim
-1..10 >< imap( ... ) # "it" is available inside the "imap"
-1..10 >< imap[n]( ... ) # "n" is replaced with "it"
-1..10 >< imap[a1, a2, ...]( ... ) # "a1" replaced with it[0], "a2" replaced with it[1], ...
+1..10 >< imap( _ ) # "it" is available inside the "imap"
+1..10 >< imap[n]( _ ) # "n" is replaced with "it"
+1..10 >< imap[a1, a2, ...]( _ ) # "a1" replaced with it[0], "a2" replaced with it[1], ...
 ```
 
 ### Limitation
