@@ -1,4 +1,4 @@
-import std/[strutils, sequtils, algorithm, strformat]
+import std/[strutils, sequtils, algorithm]
 import std/macros, macroplus
 import ./iterrr/[reducers, helper]
 
