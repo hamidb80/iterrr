@@ -2,7 +2,7 @@
 
 version       = "0.0.2"
 author        = "hamidb80"
-description   = "iterate faster ... 🏎️"
+description   = "iterate faster. functional style, lazy like, extensible iterating library"
 license       = "MIT"
 srcDir        = "src"
 
