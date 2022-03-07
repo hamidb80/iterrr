@@ -150,10 +150,10 @@ echo s.pairs >< imap($it) # works fine
 ```
 
 ### Define A Custom Reducer
-**every reducer have**:
-1. `iseqInit[T](args...): ...` :: initialize the value of accumulator :: must be generic, can have 0 or more args
-2. `iseq(var acc, newValue): bool` :: updates the state value, if returns false, the iteration stops
-3. `iseqFinalizer(n): ...` :: returns the result value of accumulator.
+**every reducer have**: [let't name our custom reducer `zzz`]
+1. `zzzInit[T](args...): ...` :: initialize the value of accumulator :: must be generic, can have 0 or more args
+2. `zzz(var acc, newValue): bool` :: updates the state value, if returns false, the iteration stops
+3. `zzzFinalizer(n): ...` :: returns the result value of accumulator.
 
 **NOTE**: see examples in `src/iterrr/reducers.nim`
 
