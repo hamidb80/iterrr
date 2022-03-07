@@ -189,4 +189,4 @@ not really, you can use them both together.
 * [@beef331](https://github.com/beef331): who helped me a lot in my Nim journey
 
 ## Donate
-you can send your donation to my [crypo wallet](https://github.com/hamidb80/hamidb80/#cryptocurrencies)
+you can send your donation to my [crypo wallets](https://github.com/hamidb80/hamidb80/#cryptocurrencies)
