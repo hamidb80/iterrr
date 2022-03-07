@@ -117,6 +117,25 @@ let xmax = countup(0, flatPoints.high, 2) >< imap(flatPoints[it]).imax()
 
 did you noticed that I've just used iterators?
 
+### Custom Ident ?!?
+using just `it` in `mapIt` and `filterIt` is just ... and makes code a little unreadable.
+
+```nim
+"hello".pairs >< ifilter[indx, c](indx > 2).imap[_, c](ord c)
+```
+Yes, you can do it!
+
+#### but remember these principles when using custom ident:
+1. if there wasn't any custom ident, `it` is assumed
+2. if there was only 1 custom ident, it replaced with `it`
+3. if there was more than 1 custom ident, `it` is unpacked 
+   
+for example:
+```nim
+1..10 >< imap( ... ) # "it" is available inside the "imap"
+1..10 >< imap[n]( ... ) # "n" is replaced with "it"
+1..10 >< imap[a1, a2, ...]( ... ) # "a1" replaced with it[0], "a2" replaced with it[1], ...
+```
 
 ### Limitation
 you have to specify the iterator for `seq` and other iterable objects [`HSlice` is an exception]

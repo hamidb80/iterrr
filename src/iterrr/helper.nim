@@ -6,15 +6,21 @@ import macroplus
 template err*(msg): untyped =
   raise newException(ValueError, msg)
 
+# template impossible*: untyped =
+#   err "impossilbe event"
+
+func `[]`[T](r: HSlice[int, T], i: int): int =
+  r.a + i
+
 # meta programming ------------------
 
-proc replaceIdent*(root: NimNode, target, by: NimNode): NimNode =
+proc replacedIdent*(root: NimNode, target, by: NimNode): NimNode =
   if eqIdent(root, target):
     by
 
   else:
     copyNimNode(root).add:
-      root.mapIt replaceIdent(it, target, by)
+      root.mapIt replacedIdent(it, target, by)
 
 
 proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
@@ -36,8 +42,8 @@ proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
     of nnkDotExpr:
       dotExprJob(
         n[CallIdent][BracketExprIdent][0],
-        n[CallIdent][BracketExprIdent][1],
-        n[BracketExprIdent][CallArgs])
+        newTree(nnkBracketExpr, n[CallIdent][BracketExprIdent][1]).add(n[CallIdent][BracketExprParams]),
+        n[CallArgs])
 
     else:
       err "no"

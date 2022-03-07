@@ -9,7 +9,7 @@ suite "chain generation":
   test "Table.pairs -> _":
     let
       t = newOrderedTable {"a": 1, "b": 2, "c": 3}
-      res = t.pairs >!< imap(fmt"{it[0]}: {it[1]}").iStrJoin(", ")
+      res = t.pairs >< imap(fmt"{it[0]}: {it[1]}").iStrJoin(", ")
 
     check res == "a: 1, b: 2, c: 3"
 
@@ -24,14 +24,20 @@ suite "chain generation":
     check res == @[-2, -1]
 
 suite "custom ident":
-  test "1":
-    discard
+  test "== 1":
+    check (1..10 >< ifilter[i](i < 5)) == @[1, 2, 3, 4]
 
-  test "2":
-    discard
+  test "> 1":
+    check (1..10 >< ifilter[i](i <= 5)) == toseq 1..5
+    check ("hello".pairs >< imap[i, c](i + ord(c))) == @[104, 102, 110, 111, 115]
 
-  test "3":
-    discard
+  test "long chain":
+    let res = 1..30 ><
+      imap[n]($n)
+      .ifilter[s](s.len == 1)
+      .imap[s](parseInt s)
+
+    check res == toseq 1..9
 
 
 suite "reducers":
