@@ -23,11 +23,11 @@ list.filterIt(it mod 2 == 0).mapIt(it * 2)
 
 which is a lot cleaner.
 
-`std/sequtils` already gives us that power. but there is another problem. as you may know, is some functional programming languages like Haskell  the result of these higher-order funcions, are not evaluated until they are needed. [it's called **lazy evaluation**]
+`std/sequtils` already gives us that power. but there is another problem. it creates intermediate `seq`s. as you may know, in some functional programming languages like Haskell, the result of these higher-order funcions, are not evaluated until they are needed. [it's called **lazy evaluation**]
 
-In other words, you don't have intermidiate `seq`s.
+In other words, there is not intermediate `seq`s.
 
-actually in the above codes, the latter is not equal to the first one. actually it is almost equal to:
+actually, the latter code is not equal to the first one. actually it is almost equal to:
 
 ```nim
 var result1: seq[int]
@@ -49,18 +49,18 @@ I mean:
 (1..20).filterIt(it > 5) # is not working
 (1..20).toseq.filterIt(it > 5) # works fine
 ```
-which can be quite expensive (time/resource consuming).
+which can be quite expensive (time/resource consuming) task.
 
 ## The Solution
-imagine yourself writing almost the same style, while getting the same benefit of imprative style
+imagine yourself writing almost the same style, while getting the same benefit of imprative style.
 
 well, we are not alone, we have macros!
 
-by writing this:
+**by writing this:**
 ```nim
 (1..20) >< ifilter(it > 5).imap(it * 2)
 ```
-you get this:
+**you get this:**
 ```nim
 var acc = iseqInit[typeof(default(1..20) * 2)]()
 
@@ -95,16 +95,14 @@ you can chain as many `imap` and `ifilter` as you want. but there is **only one*
 
 **NOTE**: the prefix `i` is just a convention.
 
-the default reducer is `iseq` witch stores the result to a sequence.
-
 you can use other reducers, such as:
-* `iseq` [the default reducer] :: add results to a `seq`
+* `iseq` [the default reducer] :: stores elements into a `seq`
 * `icount` :: count elements
 * `imin` :: calculate minimum
 * `imax` :: calculate maximum
 * `iany` :: similar to `any` from `std/sequtils`
 * `iall` :: similar to `all` from `std/sequtils`
-* `iHashSet` :: add results to a `HashSet`
+* `iHashSet` :: stores elements into a `HashSet`
 * `iStrJoin` :: similar to `join` from `std/strutils`
 * **[your custom reducer!]**
 
@@ -113,9 +111,11 @@ you can use other reducers, such as:
 here's how you can get maximum x, when `flatPoints` is: `[x0, y0, x1, y1, x2, y2, ...]`
 ```nim
 let xmax = flatPoints.pairs >< ifilter(it[0] mod 2 == 0).imap(it[1]).imax()
+# or
+let xmax = countup(0, flatPoints.high, 2) >< imap(flatPoints[it]).imax()
 ```
 
-did you noticed that I've just used `pairs` iterator? isn't that amazing?
+did you noticed that I've just used iterators?
 
 
 ### Limitation
