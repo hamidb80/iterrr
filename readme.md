@@ -2,13 +2,7 @@
 iterate faster ... 🏎️.
 write higher-order functions, get its imperative style at the compile time!
 
-# Table of Contents
-1. [The]
-
-
-# TODO 
-add table of content
-if you know the problem, just jump to usage
+if you know the problem, just jump to [Usage](#Usage)
 
 ## The Problem
 declarative programming is good, right? 
@@ -176,4 +170,4 @@ not really, you can use them both together.
 * [@beef331](https://github.com/beef331): who helped me a lot in my Nim journey
 
 ## Donate
-you can send your donation to my [cryptocurrencies](https://github.com/hamidb80/hamidb80/#cryptocurrencies)
+you can send your donation to my [crypo wallet](https://github.com/hamidb80/hamidb80/#cryptocurrencies)
