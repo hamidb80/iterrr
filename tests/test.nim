@@ -39,6 +39,12 @@ suite "custom ident":
 
     check res == toseq 1..9
 
+suite "inplace reducer":
+  var summ = 0
+  1..10 >< ifilter(it in 3..5).do(num):
+    summ.inc num
+  
+  check summ == (3 + 4 + 5)
 
 suite "reducers":
   let
