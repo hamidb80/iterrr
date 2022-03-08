@@ -141,7 +141,7 @@ Yes, you can do it!
 
 ### Don't wanna use reducer?
 > My view is that a lot of the time in Nim when you're doing filter or map you're just going to operate it on afterwards
-[@beef331](https://github.com/beef331) AKA beef.
+:: [@beef331](https://github.com/beef331) AKA beef.
 
 I'm agree with beef. it happens a lot. 
 you can do it with `do(arg1, arg2,...)`. [arguments semantic is the same as to custom ident]
