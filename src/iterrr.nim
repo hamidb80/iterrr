@@ -86,11 +86,21 @@ proc resolveIteratorAliases(ipack: var IterrrPack) =
   for c in ipack.callChain.mitems:
     c.param = c.param.replacedIteratorIdents(c.iteratorIdentAliases)
 
-proc iterrrImpl(iterIsh, body: NimNode): NimNode =
+proc inspect(s: seq[NimNode]): seq[NimNode] =
+  ## debugging purposes
+  for n in s:
+    echo treeRepr n
+
+  s
+
+proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
+  # var ipack = toIterrrPack inspect flattenNestedDotExprCall body
   var ipack = toIterrrPack flattenNestedDotExprCall body
   resolveIteratorAliases ipack
 
   let
+    hasCustomCode = code != nil
+
     accIdent = ident "acc"
     itIdent = ident "it"
     mainLoopIdent = ident "mainLoop"
@@ -98,8 +108,10 @@ proc iterrrImpl(iterIsh, body: NimNode): NimNode =
     reducerFinalizerProcIdent = ident ipack.reducer.caller.strVal & "Finalizer"
     reducerInitProcIdent = ident ipack.reducer.caller.strval & "Init"
 
+    accFinalizeCall = newCall(reducerFinalizerProcIdent, accIdent)
     accDef =
-      if ipack.reducer.params.len > 0:
+      if hasCustomCode: newEmptyNode() 
+      elif ipack.reducer.params.len > 0:
         var reducerInitCall = newCall(reducerInitProcIdent)
         reducerInitCall.add ipack.reducer.params
 
@@ -113,9 +125,15 @@ proc iterrrImpl(iterIsh, body: NimNode): NimNode =
         quote:
           var `accIdent` = `reducerInitProcIdent`[`dtype`]()
 
-  var loopBody = quote:
-    if not `reducerStateUpdaterProcIdent`(`accIdent`, `itIdent`):
-      break `mainLoopIdent`
+
+  var loopBody = 
+    if hasCustomCode: 
+      code.replacedIteratorIdents(ipack.reducer.params)
+
+    else:
+      quote:
+        if not `reducerStateUpdaterProcIdent`(`accIdent`, `itIdent`):
+          break `mainLoopIdent`
 
   for call in ipack.callChain.reversed:
     let p = call.param
@@ -133,23 +151,38 @@ proc iterrrImpl(iterIsh, body: NimNode): NimNode =
           if `p`:
             `loopBody`
 
+  newBlockStmt:
+    if hasCustomCode:
+      quote:
+        for `itIdent` in `iterIsh`:
+          `loopBody`
+    
+    else:
+      quote:
+        `accDef`
 
-  newBlockStmt quote do:
-    `accDef`
+        block `mainLoopIdent`:
+          for `itIdent` in `iterIsh`:
+            `loopBody`
 
-    block `mainLoopIdent`:
-      for `itIdent` in `iterIsh`:
-        `loopBody`
-
-    `reducerFinalizerProcIdent`(`accIdent`)
+        `accFinalizeCall`
 
 # macro ---------------------------------------
 
 macro `><`*(iterIsh, body): untyped =
   iterrrImpl iterIsh, body
 
+macro `><`*(iterIsh, body, code): untyped =
+  iterrrImpl iterIsh, body, code
+
 macro `>!<`*(iterIsh, body): untyped =
   result = iterrrImpl(iterIsh, body)
+  echo "## ", repr(iterIsh), " >< ", repr(body)
+  echo repr result
+  echo "---------------------------------------"
+
+macro `>!<`*(iterIsh, body, code): untyped =
+  result = iterrrImpl(iterIsh, body, code)
   echo "## ", repr(iterIsh), " >< ", repr(body)
   echo repr result
   echo "---------------------------------------"
