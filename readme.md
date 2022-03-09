@@ -62,7 +62,7 @@ well, we are not alone, we have macros!
 ```
 **you get this:**
 ```nim
-var acc = iseqInit[typeof(default(1..20) * 2)]()
+var acc = iseqInit[typeof(default(typeof(1..20)) * 2)]()
 
 block mainLoop:
   for it in (1..20):
