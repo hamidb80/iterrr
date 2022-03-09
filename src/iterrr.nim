@@ -34,13 +34,10 @@ func replacedIteratorIdents(expr: NimNode, aliases: seq[NimNode]): NimNode =
   of 0: expr
   of 1: expr.replacedIdent(aliases[0], ident "it")
   else:
-    var cur = expr
+    let replaceMents = (0..aliases.high).toseq.mapIt:
+      newTree(nnkBracketExpr, ident "it", newIntLitNode it)
 
-    for i, a in aliases:
-      let replacement = newTree(nnkBracketExpr, ident "it", newIntLitNode i)
-      cur = replacedIdent(cur, a, replacement)
-
-    cur
+    expr.replacedIdents(aliases, replaceMents)
 
 proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
   var hasReducer = false

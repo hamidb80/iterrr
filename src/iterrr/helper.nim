@@ -14,14 +14,20 @@ func `[]`[T](r: HSlice[int, T], i: int): int =
 
 # meta programming ------------------
 
-proc replacedIdent*(root: NimNode, target, by: NimNode): NimNode =
-  if eqIdent(root, target):
-    by
+proc replacedIdents*(root: NimNode, targets, bys: openArray[NimNode]): NimNode =
+  if root.kind == nnkIdent:
+    for i, target in targets:
+      if eqIdent(root, target):
+        return bys[i]
+
+    root
 
   else:
     copyNimNode(root).add:
-      root.mapIt replacedIdent(it, target, by)
+      root.mapIt replacedIdents(it, targets, bys)
 
+proc replacedIdent*(root: NimNode, target, by: NimNode): NimNode =
+  replacedIdents(root, [target], [by])
 
 proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
   expectKind n, nnkCall
