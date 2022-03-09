@@ -140,17 +140,6 @@ using just `it` in `mapIt` and `filterIt` is just ... and makes code a little un
 Yes, you can do it!
 
 
-### Don't wanna use reducer?
-> My view is that a lot of the time in Nim when you're doing filter or map you're just going to operate it on afterwards
-:: [@beef331](https://github.com/beef331) AKA beef.
-
-I'm agree with beef. it happens a lot. 
-you can do it with `do(arg1, arg2,...)`. [arguments semantic is the same as to custom ident]
-```nim
-1..10 >< ifilter(it in 3..5).do(num):
-  echo num
-```
-
 ### Limitation
 you have to specify the iterator for `seq` and other iterable objects [`HSlice` is an exception]
 
@@ -169,6 +158,39 @@ echo s.pairs >< imap($it) # works fine
 3. `zzzFinalizer(n): ...` :: returns the result of the accumulator.
 
 **NOTE**: see implementations in `src/iterrr/reducers.nim`
+
+### Inline Reducer
+**pattern**:
+```nim
+ITER >< imap().ireduce[acc, a](initialState, [finalizer]):
+   acc = ...
+```
+
+**example**:
+```nim
+## default idents, acc & it
+let summ = 1..10 >< ireduce(0):
+  acc += it
+
+## custom idents without finalizer
+let summ = 1..10 >< ireduce[acc, n](0):
+  acc += n
+
+## custom idents + finalizer
+let summ = 1..10 >< ireduce[acc, n](0, acc * 2):
+  acc += n
+```
+
+### Don't Wanna Use Reducer?
+> My view is that a lot of the time in Nim when you're doing filter or map you're just going to operate it on afterwards
+:: [@beef331](https://github.com/beef331) AKA beef.
+
+I'm agree with beef. it happens a lot. 
+you can do it with `do(arg1, arg2,...)`. [arguments semantic is the same as to custom ident]
+```nim
+1..10 >< ifilter(it in 3..5).do(num):
+  echo num
+```
 
 ## Inspirations
 1. [zero_functional](https://github.com/zero-functional/zero-functional)

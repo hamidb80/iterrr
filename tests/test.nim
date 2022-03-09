@@ -39,12 +39,42 @@ suite "custom ident":
 
     check res == toseq 1..9
 
-suite "inplace reducer":
+test "custom code":
   var acc: string
   1..10 >< ifilter(it in 3..5).imap($(it+1)).do(num):
     acc &= num
-  
+
   check acc == "456"
+
+suite "inline reducer":
+  test "without finalizer":
+    let t = 1..10 >< ireduce[acc, n](0):
+      if n == 6:
+        acc = n
+
+    check t == 6
+
+  test "with finalizer":
+    let t = 1..10 >< ireduce[acc, n](0, acc - 1):
+      acc = n
+
+    check t == 9
+
+  test "default idents":
+    let t = 1..10 >< ireduce(0):
+      acc = it
+
+    check t == 10
+  
+  test "call":
+    var result = 0
+
+    discard 1..2 >< ireduce[acc, n](0, acc - 1) do:
+      result = n
+      break
+
+    check result == 1
+
 
 suite "reducers":
   let
