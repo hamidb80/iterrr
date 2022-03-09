@@ -9,9 +9,6 @@ template err*(msg): untyped =
 # template impossible*: untyped =
 #   err "impossilbe event"
 
-func `[]`[T](r: HSlice[int, T], i: int): int =
-  r.a + i
-
 # meta programming ------------------
 
 proc replacedIdents*(root: NimNode, targets, bys: openArray[NimNode]): NimNode =

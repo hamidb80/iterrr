@@ -17,6 +17,7 @@ type
 
   ReducerCall = object
     caller: NimNode
+    idents: seq[NimNode]
     params: seq[NimNode]
 
   IterrrPack = object
@@ -64,6 +65,12 @@ proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
       hasReducer = true
       result.reducer = ReducerCall(
         caller: ident caller,
+
+        idents: if n[CallIdent].kind == nnkBracketExpr:
+            n[CallIdent][BracketExprParams]
+          else:
+            @[],
+
         params: n[CallArgs])
 
     else:
@@ -99,7 +106,7 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
   let
     hasCustomCode = code != nil
     noAcc = hasCustomCode and ipack.reducer.caller.strval == "do"
-    # customResucer = ipack.reducer.caller.strVal == "ireducer"
+    hasInlineReducer = ipack.reducer.caller.strVal == "ireduce"
 
     accIdent = ident "acc"
     itIdent = ident "it"
@@ -108,9 +115,14 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
     reducerFinalizerProcIdent = ident ipack.reducer.caller.strVal & "Finalizer"
     reducerInitProcIdent = ident ipack.reducer.caller.strval & "Init"
 
-    accFinalizeCall = newCall(reducerFinalizerProcIdent, accIdent)
     accDef =
       if noAcc: newEmptyNode()
+
+      elif hasInlineReducer:
+        let initialValue = ipack.reducer.params[0]
+        quote:
+          var `accIdent` = `initialValue`
+
       elif ipack.reducer.params.len > 0:
         var reducerInitCall = newCall(reducerInitProcIdent)
         reducerInitCall.add ipack.reducer.params
@@ -125,10 +137,25 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
         quote:
           var `accIdent` = `reducerInitProcIdent`[`dtype`]()
 
+    accFinalizeCall = 
+      if hasInlineReducer:
+        if ipack.reducer.params.len == 2:
+          ipack.reducer.params[1].replacedIdent(ipack.reducer.idents[0], accIdent)
+        else:
+          accIdent
+      else:
+        newCall(reducerFinalizerProcIdent, accIdent)
+
 
   var loopBody =
     if noAcc:
       code.replacedIteratorIdents(ipack.reducer.params)
+
+    elif hasInlineReducer:
+      if ipack.reducer.idents.len == 2:
+        code.replacedIdents(ipack.reducer.idents, [accIdent, itIdent])
+      else:
+        code
 
     else:
       quote:
@@ -188,6 +215,6 @@ macro `>!<`*(iterIsh, body): untyped =
 macro `>!<`*(iterIsh, body, code): untyped =
   result = iterrrImpl(iterIsh, body, code)
   echo "#["
-  echo repr(iterIsh), " >< ", repr(body), ":\n", repr code
+  echo repr(iterIsh), " >< ", repr(body), ":\n", indent(repr code, 4)
   echo "#]"
   footer
