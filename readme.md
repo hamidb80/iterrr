@@ -162,7 +162,7 @@ echo s.pairs >< imap($it) # works fine
 ### Inline Reducer
 **pattern**:
 ```nim
-ITER >< imap().ireduce[acc, a](initialState, [finalizer]):
+ITER >< ...ireduce[acc, a](initialState, [finalizer]):
    acc = ...
 ```
 
