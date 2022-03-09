@@ -110,7 +110,7 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
 
     accFinalizeCall = newCall(reducerFinalizerProcIdent, accIdent)
     accDef =
-      if hasCustomCode: newEmptyNode() 
+      if hasCustomCode: newEmptyNode()
       elif ipack.reducer.params.len > 0:
         var reducerInitCall = newCall(reducerInitProcIdent)
         reducerInitCall.add ipack.reducer.params
@@ -126,8 +126,8 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
           var `accIdent` = `reducerInitProcIdent`[`dtype`]()
 
 
-  var loopBody = 
-    if hasCustomCode: 
+  var loopBody =
+    if hasCustomCode:
       code.replacedIteratorIdents(ipack.reducer.params)
 
     else:
@@ -156,7 +156,7 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
       quote:
         for `itIdent` in `iterIsh`:
           `loopBody`
-    
+
     else:
       quote:
         `accDef`
@@ -175,14 +175,19 @@ macro `><`*(iterIsh, body): untyped =
 macro `><`*(iterIsh, body, code): untyped =
   iterrrImpl iterIsh, body, code
 
-macro `>!<`*(iterIsh, body): untyped =
-  result = iterrrImpl(iterIsh, body)
-  echo "## ", repr(iterIsh), " >< ", repr(body)
+template footer: untyped {.dirty.} =
+  echo ". . . . . . . . . . . . . . . . . . . ."
   echo repr result
   echo "---------------------------------------"
 
+macro `>!<`*(iterIsh, body): untyped =
+  result = iterrrImpl(iterIsh, body)
+  echo "## ", repr(iterIsh), " >< ", repr(body)
+  footer
+
 macro `>!<`*(iterIsh, body, code): untyped =
   result = iterrrImpl(iterIsh, body, code)
-  echo "## ", repr(iterIsh), " >< ", repr(body)
-  echo repr result
-  echo "---------------------------------------"
+  echo "#["
+  echo repr(iterIsh), " >< ", repr(body), ":\n", repr code
+  echo "#]"
+  footer

@@ -25,6 +25,17 @@ template icountFinalizer*(n): untyped = n
 
 # --------------------------------------
 
+func isumInit*[T](): T = default T
+func isumInit*[T](n: T): T = n
+
+func isum*[T](acc: var T, n: T): bool =
+  inc acc, n
+  true
+
+template isumFinalizer*(n): untyped = n
+
+# --------------------------------------
+
 func iminInit*[T](): Option[T] = none T
 
 func imin*[T](res: var Option[T], n: T): bool =

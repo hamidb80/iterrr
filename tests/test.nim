@@ -54,6 +54,9 @@ suite "reducers":
   test "icount":
     check (1..20 >< icount()) == 20
 
+  test "isum":
+    check (1..20 >< isum()) == (1+20) * 20 div 2
+
   test "imin":
     doAssertRaises RangeDefect:
       discard emptyIntList.items >< imin()

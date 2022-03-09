@@ -97,9 +97,10 @@ you can chain as many `imap` and `ifilter` as you want. but there is **only one*
 
 you can use other reducers, such as:
 * `iseq` [the default reducer] :: stores elements into a `seq`
-* `icount` :: count elements
-* `imin` :: calculate minimum
-* `imax` :: calculate maximum
+* `icount` :: counts elements
+* `isum` :: adds elements
+* `imin` :: calculates minimum
+* `imax` :: calculates maximum
 * `iany` :: similar to `any` from `std/sequtils`
 * `iall` :: similar to `all` from `std/sequtils`
 * `iHashSet` :: stores elements into a `HashSet`
