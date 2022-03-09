@@ -1,4 +1,4 @@
-import std/[strutils, sequtils, algorithm]
+import std/[strutils, sequtils, algorithm, sugar]
 import std/macros, macroplus
 import ./iterrr/[reducers, helper]
 
@@ -34,8 +34,9 @@ func replacedIteratorIdents(expr: NimNode, aliases: seq[NimNode]): NimNode =
   of 0: expr
   of 1: expr.replacedIdent(aliases[0], ident "it")
   else:
-    let replaceMents = (0..aliases.high).toseq.mapIt:
-      newTree(nnkBracketExpr, ident "it", newIntLitNode it)
+    let replaceMents = collect:
+      for i in (0..aliases.high):
+        newTree(nnkBracketExpr, ident "it", newIntLitNode i)
 
     expr.replacedIdents(aliases, replaceMents)
 
@@ -97,6 +98,8 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
 
   let
     hasCustomCode = code != nil
+    noAcc = hasCustomCode and ipack.reducer.caller.strval == "do"
+    # customResucer = ipack.reducer.caller.strVal == "ireducer"
 
     accIdent = ident "acc"
     itIdent = ident "it"
@@ -107,7 +110,7 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
 
     accFinalizeCall = newCall(reducerFinalizerProcIdent, accIdent)
     accDef =
-      if hasCustomCode: newEmptyNode()
+      if noAcc: newEmptyNode()
       elif ipack.reducer.params.len > 0:
         var reducerInitCall = newCall(reducerInitProcIdent)
         reducerInitCall.add ipack.reducer.params
@@ -124,7 +127,7 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
 
 
   var loopBody =
-    if hasCustomCode:
+    if noAcc:
       code.replacedIteratorIdents(ipack.reducer.params)
 
     else:
@@ -149,7 +152,7 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
             `loopBody`
 
   newBlockStmt:
-    if hasCustomCode:
+    if noAcc:
       quote:
         for `itIdent` in `iterIsh`:
           `loopBody`
