@@ -1,8 +1,7 @@
 import std/[macros, options]
 
-template rangeError(operationName): untyped =
-  raise newException(RangeDefect, "finding '" &
-      operationName &"' between 0 elements")
+template rangeError(): untyped =
+  raise newException(RangeDefect, "finding between 0 elements")
 
 # --------------------------------------
 
@@ -47,7 +46,7 @@ func imin*[T](res: var Option[T], n: T): bool =
 
 func iminFinalizer*[T](res: var Option[T]): T =
   if issome res: res.get
-  else: rangeError("minimum")
+  else: rangeError()
 
 # --------------------------------------
 
@@ -61,7 +60,7 @@ func imax*[T](res: var Option[T], n: T): bool =
 
 func imaxFinalizer*[T](res: var Option[T]): T =
   if issome res: res.get
-  else: rangeError("maximum")
+  else: rangeError()
 
 # --------------------------------------
 
