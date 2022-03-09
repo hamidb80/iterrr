@@ -228,3 +228,8 @@ not really, you can use them both together.
 
 ## Donate
 you can send your donation to my [crypo wallets](https://github.com/hamidb80/hamidb80/#cryptocurrencies)
+
+
+## Footnote
+> writing a macro is kind of addicting...
+:: [PMunch](https://github.com/PMunch/)
