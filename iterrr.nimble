@@ -1,6 +1,6 @@
 # Package
 
-version       = "0.0.5"
+version       = "0.0.6"
 author        = "hamidb80"
 description   = "iterate faster. functional style, lazy like, extensible iterator library"
 license       = "MIT"
