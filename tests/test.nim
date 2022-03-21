@@ -52,7 +52,7 @@ suite "custom ident :: =>":
 
 test "custom code":
   var acc: string
-  (1..10) |> filter(it in 3..5).map($(it+1)).do(num):
+  (1..10) |> filter(it in 3..5).map($(it+1)).each(num):
     acc &= num
 
   check acc == "456"
@@ -103,10 +103,10 @@ suite "non-operator":
 
     check prod == 3*4*5*6
 
-  test "do":
+  test "each":
     var acc: seq[int]
 
-    (3..6).iterrr map(it - 2).do(n):
+    (3..6).iterrr map(it - 2).each(n):
       acc.add n
 
     check acc == @[1, 2, 3, 4]

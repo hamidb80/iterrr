@@ -192,7 +192,7 @@ let summ = (1..10) |> reduce[acc, n](0, acc * 2):
 I'm agree with beef. it happens a lot. 
 you can do it with `do(arg1, arg2,...)`. [arguments semantic is the same as to custom ident]
 ```nim
-(1..10) |> filter(it in 3..5).do(num):
+(1..10) |> filter(it in 3..5).each(num):
   echo num
 ```
 
@@ -251,6 +251,7 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 ## Change Logs
 ### `0.2.0` -> `0.2.1`
 * add infix style fo custom idents inside `map` and `filter`
+* rename `do` to `each`
 
 ### `0.1.x` -> `0.2.0`
 * remove prefix `i` wherever possible

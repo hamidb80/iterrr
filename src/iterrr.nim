@@ -120,7 +120,7 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
 
   let
     hasCustomCode = code != nil
-    noAcc = hasCustomCode and ipack.reducer.caller.strval == "do"
+    noAcc = hasCustomCode and ipack.reducer.caller.strval == "each"
     hasInlineReducer = ipack.reducer.caller.strVal == "reduce"
 
     accIdent = ident "acc"
