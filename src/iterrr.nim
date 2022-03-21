@@ -58,8 +58,8 @@ proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
         n[CallIdent].strVal
 
     case caller:
-    of "imap", "map": addToCallChain hoMap
-    of "ifilter", "filter": addToCallChain hoFilter
+    of "map": addToCallChain hoMap
+    of "filter": addToCallChain hoFilter
 
     elif i == calls.high: # reducer
       hasReducer = true
@@ -106,7 +106,7 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
   let
     hasCustomCode = code != nil
     noAcc = hasCustomCode and ipack.reducer.caller.strval == "do"
-    hasInlineReducer = ipack.reducer.caller.strVal == "ireduce"
+    hasInlineReducer = ipack.reducer.caller.strVal == "reduce"
 
     accIdent = ident "acc"
     itIdent = ident "it"

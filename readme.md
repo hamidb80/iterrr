@@ -89,29 +89,29 @@ iterable |> map(operation).filter(cond).[reducer(args...)]
 you can chain as many `map` and `filter` as you want. but there is **only one** reducer.
 
 ### Main Entities:
-1. **imap** or **map** :: similar to `mapIt` from `std/sequtils`
-2. **ifilter** or **filter** :: similar to `filterIt` from `std/sequtils`
+1. **map** :: similar to `mapIt` from `std/sequtils`
+2. **filter** :: similar to `filterIt` from `std/sequtils`
 3. **[reducer]**
 
 you can use other reducers, such as:
 * `iseq` [the default reducer] :: stores elements into a `seq`
-* `icount` :: counts elements
-* `isum` :: calculates summation
-* `imin` :: calculates minimum
-* `imax` :: calculates maximum
+* `count` :: counts elements
+* `sum` :: calculates summation
+* `min` :: calculates minimum
+* `max` :: calculates maximum
 * `iany` :: similar to `any` from `std/sequtils`
 * `iall` :: similar to `all` from `std/sequtils`
 * `iHashSet` :: stores elements into a `HashSet`
-* `iStrJoin` :: similar to `join` from `std/strutils`
+* `strJoin` :: similar to `join` from `std/strutils`
 * **[your custom reducer!]**
 
 **NOTE**: see usage in `tests/test.nim`
 
 here's how you can get maximum x, when `flatPoints` is: `[x0, y0, x1, y1, x2, y2, ...]`
 ```nim
-let xmax = flatPoints.pairs |> filter(it[0] mod 2 == 0).map(it[1]).imax()
+let xmax = flatPoints.pairs |> filter(it[0] mod 2 == 0).map(it[1]).max()
 # or
-let xmax = countup(0, flatPoints.high, 2) |> map(flatPoints[it]).imax()
+let xmax = countup(0, flatPoints.high, 2) |> map(flatPoints[it]).max()
 ```
 
 did you noticed that I've just used iterators?
@@ -160,22 +160,22 @@ echo s.pairs |> map($it) # works fine
 ### Inline Reducer
 **pattern**:
 ```nim
-ITER |> ...ireduce[acc, a](initialState, [finalizer]):
+ITER |> ...reduce[acc, a](initialState, [finalizer]):
    acc = ...
 ```
 
 **example**:
 ```nim
 ## default idents, acc & it
-let summ = (1..10) |> ireduce(0):
+let summ = (1..10) |> reduce(0):
   acc += it
 
 ## custom idents without finalizer
-let summ = (1..10) |> ireduce[acc, n](0):
+let summ = (1..10) |> reduce[acc, n](0):
   acc += n
 
 ## custom idents + finalizer
-let summ = (1..10) |> ireduce[acc, n](0, acc * 2):
+let summ = (1..10) |> reduce[acc, n](0, acc * 2):
   acc += n
 ```
 
@@ -195,9 +195,9 @@ you can use `iterrr` template instead of `|>` operator.
 
 **example**:
 ```nim
-check "hello".items.iterrr filter(it != 'l').icount()
+check "hello".items.iterrr filter(it != 'l').count()
 # or
-check iterrr("hello".items, filter(it != 'l').icount()
+check iterrr("hello".items, filter(it != 'l').count()
 ```
 
 
@@ -243,8 +243,8 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 :: [PMunch](https://github.com/PMunch/)
 
 ## Change Logs
-### `0.1.0` -> `0.1.1`
-* prefix `i` in `map` and `filter` is optional
+### `0.1.x` -> `0.2.0`
+* remove prefix `i` wherever possible
 
 ### `0.0.x` -> `0.1.0`
 - operator `><` and `>!<` replaced with `|>` and `!>`
