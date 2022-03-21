@@ -188,7 +188,7 @@ let summ = (1..10) |> ireduce[acc, n](0, acc * 2):
 I'm agree with beef. it happens a lot. 
 you can do it with `do(arg1, arg2,...)`. [arguments semantic is the same as to custom ident]
 ```nim
-1..10 |> ifilter(it in 3..5).do(num):
+(1..10) |> ifilter(it in 3..5).do(num):
   echo num
 ```
 
