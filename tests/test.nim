@@ -24,14 +24,14 @@ suite "chain generation":
     check res == @[-2, -1]
 
 suite "custom ident :: []":
-  test "== 1":
+  test "1":
     check ((1..10) |> filter[i](i < 5)) == @[1, 2, 3, 4]
 
-  test "> 1":
+  test "1+":
     check ((1..10) |> filter[i](i <= 5)) == toseq 1..5
     check ("hello".pairs |> map[i, c](i + ord(c))) == @[104, 102, 110, 111, 115]
 
-  test "long chain":
+  test "chain":
     let res = (1..30) |>
       map[n]($n)
       .filter[s](s.len == 1)
