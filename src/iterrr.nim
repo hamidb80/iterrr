@@ -26,9 +26,24 @@ type
 
 # impl -----------------------------------------
 
-func getIteratorIdents(call: NimNode): seq[NimNode] =
+proc getIteratorIdents(call: NimNode): seq[NimNode] =
   if call[CallIdent].kind == nnkBracketExpr:
-    result = call[CallIdent][BracketExprParams]
+    call[CallIdent][BracketExprParams]
+
+  elif call[1].matchInfix "=>":
+    let args = call[1][InfixLeftSide]
+    call[1] = call[1][InfixRightSide]
+
+    case args.kind:
+    of nnkIdent: @[args]
+    of nnkPar: @[args[0]]
+    of nnkTupleConstr:
+      args.children.toseq
+    else:
+      raise newException(ValueError, "invalid custom ident style")
+
+  else:
+    @[]
 
 func replacedIteratorIdents(expr: NimNode, aliases: seq[NimNode]): NimNode =
   case aliases.len:

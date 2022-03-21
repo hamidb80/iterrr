@@ -23,7 +23,7 @@ suite "chain generation":
 
     check res == @[-2, -1]
 
-suite "custom ident":
+suite "custom ident :: []":
   test "== 1":
     check ((1..10) |> filter[i](i < 5)) == @[1, 2, 3, 4]
 
@@ -38,6 +38,17 @@ suite "custom ident":
       .map[s](parseInt s)
 
     check res == toseq 1..9
+
+suite "custom ident :: =>":
+  test "single":
+    check (1..10) |> filter(n => n in 3..5) == @[3, 4, 5]
+
+  test "single inside pars":
+    check (1..10) |> filter((n) => n in 2..4) == @[2, 3, 4]
+
+  test "multi":
+    check "hello".pairs |> map((idx, _) => idx) == toseq 0..4
+
 
 test "custom code":
   var acc: string

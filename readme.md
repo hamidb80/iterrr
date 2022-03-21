@@ -127,8 +127,14 @@ using just `it` in `mapIt` and `filterIt` is just ... and makes code a little un
 **I mean**:  
 ```nim
 (1..10) |> map( _ ) # "it" is available inside the "map"
+
+## bracket style
 (1..10) |> map[n]( _ ) # "n" is replaced with "it"
 (1..10) |> map[a1, a2, ...]( _ ) # "a1" is replaced with it[0], "a2" is replaced with it[1], ...
+
+## infix style
+(1..10) |> map(n => _ )
+(1..10) |> map((a1, a2, ...) => _ )
 ```
 
 **example**:
@@ -243,6 +249,9 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 :: [PMunch](https://github.com/PMunch/)
 
 ## Change Logs
+### `0.2.0` -> `0.2.1`
+* add infix style fo custom idents inside `map` and `filter`
+
 ### `0.1.x` -> `0.2.0`
 * remove prefix `i` wherever possible
 
