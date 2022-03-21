@@ -55,10 +55,16 @@ suite "inline reducer":
     check t == 6
 
   test "with finalizer":
-    let t = (1..10) |> ireduce[acc, n](0, acc - 1):
+    let t1 = (1..10) |> ireduce[acc, n](0, acc - 1):
       acc = n
 
-    check t == 9
+    check t1 == 9
+
+    let t2 = (1..10) |> ireduce(0, acc - 1):
+      acc = it
+
+    check t2 == 9
+
 
   test "default idents":
     let t = (1..10) |> ireduce(0):

@@ -139,8 +139,11 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
 
     accFinalizeCall =
       if hasInlineReducer:
-        if ipack.reducer.params.len == 2:
-          ipack.reducer.params[1].replacedIdent(ipack.reducer.idents[0], accIdent)
+        if ipack.reducer.params.len == 2: # has finalizer
+          if ipack.reducer.idents.len == 2:
+            ipack.reducer.params[1].replacedIdent(ipack.reducer.idents[0], accIdent)
+          else:
+            ipack.reducer.params[1]
         else:
           accIdent
       else:
