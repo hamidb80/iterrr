@@ -46,7 +46,7 @@ another problem with `std/seqtutils` is, that you have to convert your iterable 
 
 I mean:
 ```nim
-(1..20).filterIt(it > 5) # is not working
+(1..20).filterIt(it > 5) # is doesn't work
 (1..20).toseq.filterIt(it > 5) # works fine
 ```
 which can be quite expensive (time/resource consuming) task.
@@ -58,7 +58,7 @@ well, we are not alone, we have macros!
 
 **by writing this:**
 ```nim
-(1..20) >< ifilter(it > 5).imap(it * 2)
+(1..20) |> ifilter(it > 5).imap(it * 2)
 ```
 **you get this:**
 ```nim
@@ -79,12 +79,12 @@ it's not as clean as hand-written code, but it's good enough.
 
 ## Usage
 ### syntax
-use `><` for normal.
-and `>!<` for debug mode.
+use `|>` for normal.
+and `!>` for debug mode.
 
 **here's the pattern**
 ```nim
-iterable >< imap(operation).ifilter(cond).[reducer(args...)]
+iterable |> imap(operation).ifilter(cond).[reducer(args...)]
 ```
 you can chain as many `imap` and `ifilter` as you want. but there is **only one** reducer.
 
@@ -111,9 +111,9 @@ you can use other reducers, such as:
 
 here's how you can get maximum x, when `flatPoints` is: `[x0, y0, x1, y1, x2, y2, ...]`
 ```nim
-let xmax = flatPoints.pairs >< ifilter(it[0] mod 2 == 0).imap(it[1]).imax()
+let xmax = flatPoints.pairs |> ifilter(it[0] mod 2 == 0).imap(it[1]).imax()
 # or
-let xmax = countup(0, flatPoints.high, 2) >< imap(flatPoints[it]).imax()
+let xmax = countup(0, flatPoints.high, 2) |> imap(flatPoints[it]).imax()
 ```
 
 did you noticed that I've just used iterators?
@@ -128,14 +128,14 @@ using just `it` in `mapIt` and `filterIt` is just ... and makes code a little un
 
 **I mean**:  
 ```nim
-1..10 >< imap( _ ) # "it" is available inside the "imap"
-1..10 >< imap[n]( _ ) # "n" is replaced with "it"
-1..10 >< imap[a1, a2, ...]( _ ) # "a1" is replaced with it[0], "a2" is replaced with it[1], ...
+(1..10) |> imap( _ ) # "it" is available inside the "imap"
+(1..10) |> imap[n]( _ ) # "n" is replaced with "it"
+(1..10) |> imap[a1, a2, ...]( _ ) # "a1" is replaced with it[0], "a2" is replaced with it[1], ...
 ```
 
 **example**:
 ```nim
-"hello".pairs >< ifilter[indx, c](indx > 2).imap[_, c](ord c)
+"hello".pairs |> ifilter[indx, c](indx > 2).imap[_, c](ord c)
 ```
 Yes, you can do it!
 
@@ -146,9 +146,9 @@ you have to specify the iterator for `seq` and other iterable objects [`HSlice` 
 i mean:
 ```nim
 let s = [1, 2, 3]
-echo s >< imap($it) # doesn't work
-echo s.items >< imap($it) # works fine
-echo s.pairs >< imap($it) # works fine
+echo s |> imap($it) # doesn't work
+echo s.items |> imap($it) # works fine
+echo s.pairs |> imap($it) # works fine
 ```
 
 ### Define A Custom Reducer
@@ -162,22 +162,22 @@ echo s.pairs >< imap($it) # works fine
 ### Inline Reducer
 **pattern**:
 ```nim
-ITER >< ...ireduce[acc, a](initialState, [finalizer]):
+ITER |> ...ireduce[acc, a](initialState, [finalizer]):
    acc = ...
 ```
 
 **example**:
 ```nim
 ## default idents, acc & it
-let summ = 1..10 >< ireduce(0):
+let summ = (1..10) |> ireduce(0):
   acc += it
 
 ## custom idents without finalizer
-let summ = 1..10 >< ireduce[acc, n](0):
+let summ = (1..10) |> ireduce[acc, n](0):
   acc += n
 
 ## custom idents + finalizer
-let summ = 1..10 >< ireduce[acc, n](0, acc * 2):
+let summ = (1..10) |> ireduce[acc, n](0, acc * 2):
   acc += n
 ```
 
@@ -188,9 +188,20 @@ let summ = 1..10 >< ireduce[acc, n](0, acc * 2):
 I'm agree with beef. it happens a lot. 
 you can do it with `do(arg1, arg2,...)`. [arguments semantic is the same as to custom ident]
 ```nim
-1..10 >< ifilter(it in 3..5).do(num):
+1..10 |> ifilter(it in 3..5).do(num):
   echo num
 ```
+
+### Non Operator Version
+you can use `iterrr` template instead of `|>` operator.
+
+**example**:
+```nim
+check "hello".items.iterrr ifilter(it != 'l').icount()
+# or
+check iterrr("hello".items, ifilter(it != 'l').icount()
+```
+
 
 ## Inspirations
 1. [zero_functional](https://github.com/zero-functional/zero-functional)
@@ -229,7 +240,11 @@ not really, you can use them both together.
 ## Donate
 you can send your donation to my [crypo wallets](https://github.com/hamidb80/hamidb80/#cryptocurrencies)
 
-
-## Footnote
+## Foot Notes
 > writing a macro is kind of addicting...
 :: [PMunch](https://github.com/PMunch/)
+
+## Change Logs
+### `0.0.x` -> `0.1.0`
+- operator `><` and `>!<` replaced with `|>` and `!>`
+- non-operator version added

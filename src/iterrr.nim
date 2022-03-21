@@ -91,7 +91,7 @@ proc resolveIteratorAliases(ipack: var IterrrPack) =
   for c in ipack.callChain.mitems:
     c.param = c.param.replacedIteratorIdents(c.iteratorIdentAliases)
 
-proc inspect(s: seq[NimNode]): seq[NimNode] =
+proc inspect(s: seq[NimNode]): seq[NimNode] {.used.} =
   ## debugging purposes
   for n in s:
     echo treeRepr n
@@ -137,7 +137,7 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
         quote:
           var `accIdent` = `reducerInitProcIdent`[`dtype`]()
 
-    accFinalizeCall = 
+    accFinalizeCall =
       if hasInlineReducer:
         if ipack.reducer.params.len == 2:
           ipack.reducer.params[1].replacedIdent(ipack.reducer.idents[0], accIdent)
@@ -196,25 +196,34 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
 
 # macro ---------------------------------------
 
-macro `><`*(iterIsh, body): untyped =
-  iterrrImpl iterIsh, body
-
-macro `><`*(iterIsh, body, code): untyped =
-  iterrrImpl iterIsh, body, code
-
 template footer: untyped {.dirty.} =
   echo ". . . . . . . . . . . . . . . . . . . ."
   echo repr result
   echo "---------------------------------------"
 
-macro `>!<`*(iterIsh, body): untyped =
+
+macro `|>`*(iterIsh, body): untyped =
+  iterrrImpl iterIsh, body
+
+macro `|>`*(iterIsh, body, code): untyped =
+  iterrrImpl iterIsh, body, code
+
+macro `!>`*(iterIsh, body): untyped =
   result = iterrrImpl(iterIsh, body)
   echo "## ", repr(iterIsh), " >< ", repr(body)
   footer
 
-macro `>!<`*(iterIsh, body, code): untyped =
+macro `!>`*(iterIsh, body, code): untyped =
   result = iterrrImpl(iterIsh, body, code)
   echo "#["
   echo repr(iterIsh), " >< ", repr(body), ":\n", indent(repr code, 4)
   echo "#]"
   footer
+
+
+template iterrr*(iterIsh, body): untyped =
+  iterIsh |> body
+
+template iterrr*(iterIsh, body, code): untyped =
+  iterIsh |> body:
+    code
