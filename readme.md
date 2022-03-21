@@ -99,8 +99,8 @@ you can use other reducers, such as:
 * `sum` :: calculates summation
 * `min` :: calculates minimum
 * `max` :: calculates maximum
-* `iany` :: similar to `any` from `std/sequtils`
-* `iall` :: similar to `all` from `std/sequtils`
+* `any` :: similar to `any` from `std/sequtils`
+* `all` :: similar to `all` from `std/sequtils`
 * `iHashSet` :: stores elements into a `HashSet`
 * `strJoin` :: similar to `join` from `std/strutils`
 * **[your custom reducer!]**
