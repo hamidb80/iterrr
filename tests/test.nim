@@ -57,7 +57,7 @@ test "custom code":
 
   check acc == "456"
 
-suite "inline reducer":
+suite "inplace reducer":
   test "without finalizer":
     let t = (1..10) |> reduce[acc, n](0):
       if n == 6:
@@ -135,6 +135,18 @@ suite "reducers":
 
     check [2, 1, 3].items |> max() == 3
 
+  test "first":
+    check (1..10) |> filter(it > 5).first() == 6
+
+    doAssertRaises RangeDefect:
+      discard (1..10) |> filter(it > 10).first()
+
+  test "last":
+    check (1..10) |> filter(it < 5).last() == 4
+
+    doAssertRaises RangeDefect:
+      discard (1..10) |> filter(it < 0).last()
+
   test "any":
     check:
       emptyBoolList.items |> any() == false
@@ -152,3 +164,41 @@ suite "reducers":
 
   test "iHashSet":
     check (-5..5) |> map(abs it).iHashSet() == toHashSet toseq 0..5
+
+
+suite "ifor":
+  test "filter":
+    var acc: seq[int]
+
+    ifor [n1, n2, n3] in [1..2,
+                          1..3,
+                          1..4,
+                          filter n1+n2+n3 == 8]:
+
+      acc.add n1*100 + n2*10 + n3
+
+    check acc == @[134, 224, 233]
+
+  test "break_custom_loop":
+    var c = 0
+    ifor [x, y, z] in [1..3,
+                       1..3,
+                       1..3]:
+      inc c
+      break block_x
+
+    check c == 1
+
+  test "tuple ident":
+    let qlines = [
+      "SELECT COUNT(1) as cnt",
+      "FROM people",
+      "WHERE age = 87"
+    ]
+
+    var numbers: seq[char]
+    ifor [statement, (i, ch)] in [qlines, statement.pairs]:
+      if ch in '0'..'9':
+        numbers.add ch
+
+    check numbers.join == "187"

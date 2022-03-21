@@ -64,7 +64,7 @@ proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
       result.callChain.add HigherOrderCall(
         kind: higherOrderKind,
         iteratorIdentAliases: getIteratorIdents n,
-        param: n[CallArgs][0])
+        param: n[CallArgs][0]) # TODO optimize
 
     let caller = normalize:
       if n[CallIdent].kind == nnkBracketExpr:
@@ -212,19 +212,25 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
 
         `accFinalizeCall`
 
+
+proc toVarTuple(n: NimNode): NimNode =
+  result = newTree(nnkVarTuple)
+  result.add n.toseq
+  result.add newEmptyNode()
+
 # macro ---------------------------------------
-
-template footer: untyped {.dirty.} =
-  echo ". . . . . . . . . . . . . . . . . . . ."
-  echo repr result
-  echo "---------------------------------------"
-
 
 macro `|>`*(iterIsh, body): untyped =
   iterrrImpl iterIsh, body
 
 macro `|>`*(iterIsh, body, code): untyped =
   iterrrImpl iterIsh, body, code
+
+
+template footer: untyped {.dirty.} =
+  echo ". . . . . . . . . . . . . . . . . . . ."
+  echo repr result
+  echo "---------------------------------------"
 
 macro `!>`*(iterIsh, body): untyped =
   result = iterrrImpl(iterIsh, body)
@@ -245,3 +251,51 @@ template iterrr*(iterIsh, body): untyped =
 template iterrr*(iterIsh, body, code): untyped =
   iterIsh |> body:
     code
+
+# ---------------------------------------------
+
+macro ifor*(header, body): untyped =
+  assert matchInfix(header, "in")
+  assert header[InfixLeftSide..InfixRightSide].allit it.kind == nnkBracket
+
+  result = body
+  let idents = header[InfixLeftSide]
+  var i = idents.len - 1
+
+  for entity in header[InfixRightSide].toseq.reversed:
+    case entity.kind:
+    of nnkCommand:
+      let stmt = entity[CommandBody]
+
+      case entity[CommandIdent].strVal:
+      of "filter":
+        result = quote:
+          if `stmt`:
+            `result`
+
+      else:
+        raise newException(ValueError, "invalid entity")
+
+    else:
+      let
+        needUnpack = idents[i].kind == nnkTupleConstr
+        iterId =
+          if needUnpack:
+            toVarTuple idents[i]
+          else:
+            idents[i]
+
+        blockId =
+          if needUnpack:
+            ident "block_" & idents[i].toseq.mapit(it.strval).join "_"
+          else:
+            ident "block_" & iterId.strval
+
+      dec i
+      result = quote:
+        block `blockId`:
+          for `iterId` in `entity`:
+            `result`
+
+  # echo treerepr result
+  # echo repr result

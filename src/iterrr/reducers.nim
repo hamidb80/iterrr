@@ -36,6 +36,11 @@ template sumFinalizer*(n): untyped = n
 
 # --------------------------------------
 
+template getOption(n): untyped =
+  if issome n: n.get
+  else: rangeError()
+
+
 func minInit*[T](): Option[T] = none T
 
 func min*[T](res: var Option[T], n: T): bool =
@@ -44,11 +49,9 @@ func min*[T](res: var Option[T], n: T): bool =
 
   true
 
-func minFinalizer*[T](res: var Option[T]): T =
-  if issome res: res.get
-  else: rangeError()
+func minFinalizer*[T](res: Option[T]): T =
+  getOption res
 
-# --------------------------------------
 
 func maxInit*[T](): Option[T] = none T
 
@@ -58,9 +61,33 @@ func max*[T](res: var Option[T], n: T): bool =
 
   true
 
-func maxFinalizer*[T](res: var Option[T]): T =
-  if issome res: res.get
-  else: rangeError()
+func maxFinalizer*[T](res: Option[T]): T =
+  getOption res
+
+# --------------------------------------
+
+func firstInit*[T](): Option[T] = none T
+
+func first*[T](res: var Option[T], val: T): bool =
+  if isNone res:
+    res = some val
+    false
+
+  else:
+    true
+
+func firstFinalizer*[T](n: Option[T]): T =
+  getOption n
+
+
+func lastInit*[T](): Option[T] = none T
+
+func last*[T](res: var Option[T], val: T): bool =
+  res = some val
+  true
+
+func lastFinalizer*[T](n: Option[T]): T =
+  getOption n
 
 # --------------------------------------
 
@@ -76,7 +103,6 @@ func any*(res: var bool, n: bool): bool =
 
 template anyFinalizer*(n): untyped = n
 
-# --------------------------------------
 
 func allInit*[T](): bool = true
 

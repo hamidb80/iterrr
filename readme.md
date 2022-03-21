@@ -99,6 +99,8 @@ you can use other reducers, such as:
 * `sum` :: calculates summation
 * `min` :: calculates minimum
 * `max` :: calculates maximum
+* `first` :: returns the first item
+* `last` :: returns the last item
 * `any` :: similar to `any` from `std/sequtils`
 * `all` :: similar to `all` from `std/sequtils`
 * `iHashSet` :: stores elements into a `HashSet`
@@ -163,7 +165,7 @@ echo s.pairs |> map($it) # works fine
 
 **NOTE**: see implementations in `src/iterrr/reducers.nim`
 
-### Inline Reducer
+### Inplace Reducer
 **pattern**:
 ```nim
 ITER |> ...reduce[acc, a](initialState, [finalizer]):
@@ -206,6 +208,9 @@ check "hello".items.iterrr filter(it != 'l').count()
 check iterrr("hello".items, filter(it != 'l').count()
 ```
 
+## do nested with `ifor`
+there is also a DSL to do nested for loops. 
+for now see `tests/test.nim`.
 
 ## Inspirations
 1. [zero_functional](https://github.com/zero-functional/zero-functional)
@@ -249,9 +254,13 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 :: [PMunch](https://github.com/PMunch/)
 
 ## Change Logs
+### `0.2.x` -> `0.3.0`
+* rename `do` to `each`
+* add `first` and `last` reducers
+* add `ifor` DSL
+
 ### `0.2.0` -> `0.2.1`
 * add infix style fo custom idents inside `map` and `filter`
-* rename `do` to `each`
 
 ### `0.1.x` -> `0.2.0`
 * remove prefix `i` wherever possible
