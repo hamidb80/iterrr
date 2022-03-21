@@ -47,7 +47,7 @@ suite "custom ident :: =>":
     check (1..10) |> filter((n) => n in 2..4) == @[2, 3, 4]
 
   test "multi":
-    check "hello".pairs |> map((idx, _) => idx) == toseq 0..4
+    check "hello".pairs |> map((idx, c) => c) == toseq "hello".toseq
 
 
 test "custom code":
