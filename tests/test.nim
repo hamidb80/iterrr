@@ -4,44 +4,44 @@ import iterrr
 
 suite "chain generation":
   test "HSlice -> _":
-    check ((1..5) |> imap(it * it).ifilter(it > 10)) == @[16, 25]
+    check ((1..5) |> map(it * it).filter(it > 10)) == @[16, 25]
 
   test "Table.pairs -> _":
     let
       t = newOrderedTable {"a": 1, "b": 2, "c": 3}
-      res = t.pairs |> imap(fmt"{it[0]}: {it[1]}").iStrJoin(", ")
+      res = t.pairs |> map(fmt"{it[0]}: {it[1]}").iStrJoin(", ")
 
     check res == "a: 1, b: 2, c: 3"
 
   test "long chain":
     let res =
       [-2, -1, 0, 1, 2].items |>
-        imap($it)
-        .ifilter(it != "0")
-        .ifilter('-' in it)
-        .imap(parseInt it)
+        map($it)
+        .filter(it != "0")
+        .filter('-' in it)
+        .map(parseInt it)
 
     check res == @[-2, -1]
 
 suite "custom ident":
   test "== 1":
-    check ((1..10) |> ifilter[i](i < 5)) == @[1, 2, 3, 4]
+    check ((1..10) |> filter[i](i < 5)) == @[1, 2, 3, 4]
 
   test "> 1":
-    check ((1..10) |> ifilter[i](i <= 5)) == toseq 1..5
-    check ("hello".pairs |> imap[i, c](i + ord(c))) == @[104, 102, 110, 111, 115]
+    check ((1..10) |> filter[i](i <= 5)) == toseq 1..5
+    check ("hello".pairs |> map[i, c](i + ord(c))) == @[104, 102, 110, 111, 115]
 
   test "long chain":
     let res = (1..30) |>
-      imap[n]($n)
-      .ifilter[s](s.len == 1)
-      .imap[s](parseInt s)
+      map[n]($n)
+      .filter[s](s.len == 1)
+      .map[s](parseInt s)
 
     check res == toseq 1..9
 
 test "custom code":
   var acc: string
-  (1..10) |> ifilter(it in 3..5).imap($(it+1)).do(num):
+  (1..10) |> filter(it in 3..5).map($(it+1)).do(num):
     acc &= num
 
   check acc == "456"
@@ -83,8 +83,8 @@ suite "inline reducer":
 
 suite "non-operator":
   test "simple chain":
-    check ("hello".items.iterrr ifilter(it != 'l').icount()) == 3
-    check iterrr("hello".items, ifilter(it != 'l').icount()) == 3
+    check ("hello".items.iterrr filter(it != 'l').icount()) == 3
+    check iterrr("hello".items, filter(it != 'l').icount()) == 3
 
   test "inline reducer":
     let prod = (3..6).iterrr ireduce(1):
@@ -94,11 +94,11 @@ suite "non-operator":
 
   test "do":
     var acc: seq[int]
-    
-    (3..6).iterrr imap(it - 2).do(n):
+
+    (3..6).iterrr map(it - 2).do(n):
       acc.add n
 
-    check acc == @[1,2,3,4] 
+    check acc == @[1, 2, 3, 4]
 
 
 suite "reducers":
@@ -140,4 +140,4 @@ suite "reducers":
     check (1..4) |> iStrJoin(";") == "1;2;3;4"
 
   test "iHashSet":
-    check (-5..5) |> imap(abs it).iHashSet() == toHashSet toseq 0..5
+    check (-5..5) |> map(abs it).iHashSet() == toHashSet toseq 0..5

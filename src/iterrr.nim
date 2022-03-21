@@ -58,8 +58,8 @@ proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
         n[CallIdent].strVal
 
     case caller:
-    of "imap": addToCallChain hoMap
-    of "ifilter": addToCallChain hoFilter
+    of "imap", "map": addToCallChain hoMap
+    of "ifilter", "filter": addToCallChain hoFilter
 
     elif i == calls.high: # reducer
       hasReducer = true

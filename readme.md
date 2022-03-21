@@ -58,7 +58,7 @@ well, we are not alone, we have macros!
 
 **by writing this:**
 ```nim
-(1..20) |> ifilter(it > 5).imap(it * 2)
+(1..20) |> filter(it > 5).map(it * 2)
 ```
 **you get this:**
 ```nim
@@ -84,16 +84,14 @@ and `!>` for debug mode.
 
 **here's the pattern**
 ```nim
-iterable |> imap(operation).ifilter(cond).[reducer(args...)]
+iterable |> map(operation).filter(cond).[reducer(args...)]
 ```
-you can chain as many `imap` and `ifilter` as you want. but there is **only one** reducer.
+you can chain as many `map` and `filter` as you want. but there is **only one** reducer.
 
 ### Main Entities:
-1. **imap** :: similar to `mapIt` from `std/sequtils`
-2. **ifilter** :: similar to `filterIt` from `std/sequtils`
+1. **imap** or **map** :: similar to `mapIt` from `std/sequtils`
+2. **ifilter** or **filter** :: similar to `filterIt` from `std/sequtils`
 3. **[reducer]**
-
-**NOTE**: the prefix `i` is just a convention.
 
 you can use other reducers, such as:
 * `iseq` [the default reducer] :: stores elements into a `seq`
@@ -111,9 +109,9 @@ you can use other reducers, such as:
 
 here's how you can get maximum x, when `flatPoints` is: `[x0, y0, x1, y1, x2, y2, ...]`
 ```nim
-let xmax = flatPoints.pairs |> ifilter(it[0] mod 2 == 0).imap(it[1]).imax()
+let xmax = flatPoints.pairs |> filter(it[0] mod 2 == 0).map(it[1]).imax()
 # or
-let xmax = countup(0, flatPoints.high, 2) |> imap(flatPoints[it]).imax()
+let xmax = countup(0, flatPoints.high, 2) |> map(flatPoints[it]).imax()
 ```
 
 did you noticed that I've just used iterators?
@@ -128,14 +126,14 @@ using just `it` in `mapIt` and `filterIt` is just ... and makes code a little un
 
 **I mean**:  
 ```nim
-(1..10) |> imap( _ ) # "it" is available inside the "imap"
-(1..10) |> imap[n]( _ ) # "n" is replaced with "it"
-(1..10) |> imap[a1, a2, ...]( _ ) # "a1" is replaced with it[0], "a2" is replaced with it[1], ...
+(1..10) |> map( _ ) # "it" is available inside the "map"
+(1..10) |> map[n]( _ ) # "n" is replaced with "it"
+(1..10) |> map[a1, a2, ...]( _ ) # "a1" is replaced with it[0], "a2" is replaced with it[1], ...
 ```
 
 **example**:
 ```nim
-"hello".pairs |> ifilter[indx, c](indx > 2).imap[_, c](ord c)
+"hello".pairs |> filter[indx, c](indx > 2).map[_, c](ord c)
 ```
 Yes, you can do it!
 
@@ -146,9 +144,9 @@ you have to specify the iterator for `seq` and other iterable objects [`HSlice` 
 i mean:
 ```nim
 let s = [1, 2, 3]
-echo s |> imap($it) # doesn't work
-echo s.items |> imap($it) # works fine
-echo s.pairs |> imap($it) # works fine
+echo s |> map($it) # doesn't work
+echo s.items |> map($it) # works fine
+echo s.pairs |> map($it) # works fine
 ```
 
 ### Define A Custom Reducer
@@ -188,7 +186,7 @@ let summ = (1..10) |> ireduce[acc, n](0, acc * 2):
 I'm agree with beef. it happens a lot. 
 you can do it with `do(arg1, arg2,...)`. [arguments semantic is the same as to custom ident]
 ```nim
-(1..10) |> ifilter(it in 3..5).do(num):
+(1..10) |> filter(it in 3..5).do(num):
   echo num
 ```
 
@@ -197,9 +195,9 @@ you can use `iterrr` template instead of `|>` operator.
 
 **example**:
 ```nim
-check "hello".items.iterrr ifilter(it != 'l').icount()
+check "hello".items.iterrr filter(it != 'l').icount()
 # or
-check iterrr("hello".items, ifilter(it != 'l').icount()
+check iterrr("hello".items, filter(it != 'l').icount()
 ```
 
 
@@ -245,6 +243,9 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 :: [PMunch](https://github.com/PMunch/)
 
 ## Change Logs
+### `0.1.0` -> `0.1.1`
+* prefix `i` in `map` and `filter` is optional
+
 ### `0.0.x` -> `0.1.0`
 - operator `><` and `>!<` replaced with `|>` and `!>`
 - non-operator version added
