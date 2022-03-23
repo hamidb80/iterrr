@@ -2,7 +2,7 @@ import std/[strutils, sequtils, sugar]
 import std/macros, macroplus
 import ./iterrr/[reducers, helper, iterators]
 
-export reducers
+export reducers, iterators
 
 # def ------------------------------------------
 
