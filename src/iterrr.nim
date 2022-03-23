@@ -1,6 +1,6 @@
-import std/[strutils, sequtils, algorithm, sugar]
+import std/[strutils, sequtils, sugar]
 import std/macros, macroplus
-import ./iterrr/[reducers, helper]
+import ./iterrr/[reducers, helper, iterators]
 
 export reducers
 
@@ -64,7 +64,7 @@ proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
       result.callChain.add HigherOrderCall(
         kind: higherOrderKind,
         iteratorIdentAliases: getIteratorIdents n,
-        param: n[CallArgs[0]]) # TODO optimize
+        param: n[CallArgs[0]])
 
     let caller = normalize:
       if n[CallIdent].kind == nnkBracketExpr:
@@ -180,7 +180,7 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
         if not `reducerStateUpdaterProcIdent`(`accIdent`, `itIdent`):
           break `mainLoopIdent`
 
-  for call in ipack.callChain.reversed:
+  for call in ipack.callChain.ritems:
     let p = call.param
 
     loopBody = block:
@@ -262,7 +262,7 @@ macro ifor*(header, body): untyped =
   let idents = header[InfixLeftSide]
   var i = idents.len - 1
 
-  for entity in header[InfixRightSide].toseq.reversed:
+  for entity in header[InfixRightSide].rchildren:
     case entity.kind:
     of nnkCommand:
       let stmt = entity[CommandBody]

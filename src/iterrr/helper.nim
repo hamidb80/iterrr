@@ -45,7 +45,8 @@ proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
     of nnkDotExpr:
       dotExprJob(
         n[CallIdent][BracketExprIdent][0],
-        newTree(nnkBracketExpr, n[CallIdent][BracketExprIdent][1]).add(n[CallIdent][BracketExprParams]),
+        newTree(nnkBracketExpr, n[CallIdent][BracketExprIdent][1]).add(n[
+            CallIdent][BracketExprParams]),
         n[CallArgs])
 
     else:
