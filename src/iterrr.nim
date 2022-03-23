@@ -64,7 +64,7 @@ proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
       result.callChain.add HigherOrderCall(
         kind: higherOrderKind,
         iteratorIdentAliases: getIteratorIdents n,
-        param: n[CallArgs][0]) # TODO optimize
+        param: n[CallArgs[0]]) # TODO optimize
 
     let caller = normalize:
       if n[CallIdent].kind == nnkBracketExpr:
