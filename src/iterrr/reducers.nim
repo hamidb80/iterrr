@@ -15,9 +15,9 @@ template iseqFinalizer*(n): untyped = n
 
 # --------------------------------------
 
-func countInit*[T](): int = 0
+template countInit*[T](): int = 0
 
-func count*[T](acc: var int, _: T): bool =
+template count*[T](acc: var int, _: T): bool =
   inc acc
   true
 
