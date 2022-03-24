@@ -39,8 +39,16 @@ study "filter.[reducer]":
 study "transformer":
   block cycle:
     (1..10) |> filter(it in 3..5).cycle(7).each(number):
-      echo number
-      # 3 4 5 3 4 5 3
+      echo number # 3 4 5 3 4 5 3
+
+  block skip:
+    _
+
+  block limit:
+    _
+
+  block breakif:
+    _
 
   block flatten:
     let mat = [
@@ -49,14 +57,5 @@ study "transformer":
       [7, 8, 9]
     ]
 
-    mat.items |> flatten().map(it ^ 2).group(3).filter(it.sum > 20).each(row):
+    mat.flatItems |> map(it ^ 2).filter(it.sum > 20).each(row):
       echo row
-
-  block memory:
-    [1, 4, 5, 8, 11].items |> between().each(n):
-      echo n # 2 3 5 6 7 9 10
-    
-    for it in _:
-      # between(it)
-
-      code
