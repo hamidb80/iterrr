@@ -263,6 +263,10 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 :: [PMunch](https://github.com/PMunch/)
 
 ## Change Logs
+### `0.3.0` -> `0.3.2`
+* optimize `count` reducer
+* optimize compile time
+
 ### `0.2.x` -> `0.3.0`
 * rename `do` to `each`
 * add `first` and `last` reducers
