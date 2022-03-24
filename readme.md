@@ -90,7 +90,7 @@ iterable |> map(operation).filter(cond).breakif(cond).[reducer(args...)]
 ### Main Entities:
 1. **map** :: similar to `mapIt` from `std/sequtils`
 2. **filter** :: similar to `filterIt` from `std/sequtils`
-3. **breakif** :: similar to `takeWhile` in functional programming languages but negetive.
+3. **breakif** :: similar to `takeWhile` in functional programming languages but negative.
 4. **[reducer]**
 
 **NOTE:** you can chain as many `map`/`filter`/... as you want in any order, but there is **only one** reducer.
