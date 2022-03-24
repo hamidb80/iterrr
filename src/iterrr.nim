@@ -244,7 +244,7 @@ macro `!>`*(iterIsh, body, code): untyped =
   echo "#]"
   footer
 
-
+# TODO support multi line
 template iterrr*(iterIsh, body): untyped =
   iterIsh |> body
 
