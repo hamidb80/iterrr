@@ -226,6 +226,7 @@ for now see `tests/test.nim`.
 2. [itertools](https://github.com/narimiran/itertools)
 3. [slicerator](https://github.com/beef331/slicerator)
 4. [xflywind's comment on this issue](https://github.com/nim-lang/Nim/issues/18405#issuecomment-888391521)
+5. [mangle](https://github.com/baabelfish/mangle/)
 
 ## Common Questions:
 ### `iterrr` VS `zero_functional`:
