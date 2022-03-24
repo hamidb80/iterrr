@@ -53,14 +53,21 @@ suite "custom ident :: =>":
   test "multi":
     check "hello".pairs |> map((idx, c) => c) == toseq "hello".toseq
 
-test "custom ident :: reduce": 
-  let res = "hello".pairs |> reduce[result, (idx, ch)](("", 0)):
-    result[0] &= ch
-    result[1] += idx
+suite "custom ident :: reduce": 
+  test "1":
+    let res = (1..10) |> reduce[result, n](0):
+      result += n
 
-  check:
-    res[0] == "hello"
-    res[1] == sum toseq 0..("hello".high)
+    check res == sum toseq 1..10
+
+  test "1+":
+    let res = "hello".pairs |> reduce[result, (idx, ch)](("", 0)):
+      result[0] &= ch
+      result[1] += idx
+
+    check:
+      res[0] == "hello"
+      res[1] == sum toseq 0..("hello".high)
 
 test "custom code":
   var acc: string
@@ -71,23 +78,17 @@ test "custom code":
 
 suite "inplace reducer":
   test "without finalizer":
-    let t = (1..10) |> reduce[acc, n](0):
-      if n == 6:
-        acc = n
+    let t = (1..10) |> reduce(0):
+      if it == 6:
+        acc = it
 
     check t == 6
 
   test "with finalizer":
-    let t1 = (1..10) |> reduce[acc, n](0, acc - 1):
-      acc = n
-
-    check t1 == 9
-
-    let t2 = (1..10) |> reduce(0, acc - 1):
+    let t = (1..10) |> reduce(0, acc - 1):
       acc = it
 
-    check t2 == 9
-
+    check t == 9
 
   test "default idents":
     let t = (1..10) |> reduce(0):

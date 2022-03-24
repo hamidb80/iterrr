@@ -216,7 +216,7 @@ iterrr "hello".items:
   map(...)
   filter(...)
   reduce[result, num](0):
-    
+    ...
 ```
 
 ## do nested with `ifor`
@@ -273,19 +273,19 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 - add `breakif`
 
 ### `0.3.0` -> `0.3.2`
-* optimize `count` reducer
-* optimize compile time
+- optimize `count` reducer
+- optimize compile time
 
 ### `0.2.x` -> `0.3.0`
-* rename `do` to `each`
-* add `first` and `last` reducers
-* add `ifor` DSL
+- rename `do` to `each`
+- add `first` and `last` reducers
+- add `ifor` DSL
 
 ### `0.2.0` -> `0.2.1`
-* add infix style fo custom idents inside `map` and `filter`
+- add infix style fo custom idents inside `map` and `filter`
 
 ### `0.1.x` -> `0.2.0`
-* remove prefix `i` wherever possible
+- remove prefix `i` wherever possible
 
 ### `0.0.x` -> `0.1.0`
 - operator `><` and `>!<` replaced with `|>` and `!>`
