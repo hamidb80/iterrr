@@ -110,7 +110,7 @@ suite "non-operator":
     check ("hello".items.iterrr filter(it != 'l').count()) == 3
     check iterrr("hello".items, filter(it != 'l').count()) == 3
 
-  test "inline reducer":
+  test "inplace reducer":
     let prod = (3..6).iterrr reduce(1):
       acc *= it
 
@@ -124,6 +124,15 @@ suite "non-operator":
 
     check acc == @[1, 2, 3, 4]
 
+  test "multi line":
+    var acc: seq[int]
+    (3..6).iterrr:
+      filter(it > 3)
+      map[n](n - 2)
+      each(n):
+        acc.add n
+
+    check acc == @[2,3,4]
 
 suite "reducers":
   let

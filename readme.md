@@ -213,7 +213,6 @@ you can use `iterrr` template instead of `|>` operator.
 # or
 iterrr("hello".items, filter(it != 'l').count()
 
-# TODO multi line
 iterrr "hello".items: # or "hello".items.iterrr:
   map(...)
   filter(...)
@@ -268,8 +267,9 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 :: [PMunch](https://github.com/PMunch/)
 
 ## Change Logs
-### `0.3.3` -> `0.3.4`
+### `0.3.3` -> `0.3.5`
 - add unpack custom ident for `reduce`
+- add multi line support for `iterrr` (non operator version)
 
 ### `0.3.2` -> `0.3.3`
 - add `breakif`

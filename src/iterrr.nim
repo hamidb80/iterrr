@@ -114,9 +114,11 @@ proc inspect(s: seq[NimNode]): seq[NimNode] {.used.} =
 
   s
 
-proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
-  # var ipack = toIterrrPack inspect flattenNestedDotExprCall body
-  var ipack = toIterrrPack flattenNestedDotExprCall body
+proc iterrrImpl(iterIsh: NimNode, calls: seq[NimNode],
+    code: NimNode = nil): NimNode =
+
+  # var ipack = toIterrrPack inspect calls
+  var ipack = toIterrrPack calls
   resolveIteratorAliases ipack
 
   let
@@ -176,13 +178,12 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
         of nnkIdent:
           code.replacedIdents(ipack.reducer.idents, [accIdent, itIdent])
         of nnkTupleConstr:
-          let 
-            nn = ipack.reducer.idents[1].toseq
-            rr = buildBracketExprOf(ident "it", nn.len)
-          code.replacedIdents(ipack.reducer.idents[0] & nn, @[accIdent] & rr)
+          let
+            customIdents = ipack.reducer.idents[1].toseq
+            repls = buildBracketExprOf(ident "it", customIdents.len)
+          code.replacedIdents(ipack.reducer.idents[0] & customIdents, @[accIdent] & repls)
         else:
-          # TODO easier error
-          raise newException(ValueError, "invalid inplace reducer custom ident type")
+          raise newException(ValueError, "invalid inplace reducer custom ident type") # TODO easier error
       else:
         code
 
@@ -231,19 +232,18 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
 
         `accFinalizeCall`
 
-
 proc toVarTuple(n: NimNode): NimNode =
   result = newTree(nnkVarTuple)
   result.add n.toseq
   result.add newEmptyNode()
 
-# macro ---------------------------------------
+# main ---------------------------------------
 
 macro `|>`*(iterIsh, body): untyped =
-  iterrrImpl iterIsh, body
+  iterrrImpl iterIsh, flattenNestedDotExprCall body
 
 macro `|>`*(iterIsh, body, code): untyped =
-  iterrrImpl iterIsh, body, code
+  iterrrImpl iterIsh, flattenNestedDotExprCall body, code
 
 
 template footer: untyped {.dirty.} =
@@ -252,24 +252,39 @@ template footer: untyped {.dirty.} =
   echo "---------------------------------------"
 
 macro `!>`*(iterIsh, body): untyped =
-  result = iterrrImpl(iterIsh, body)
+  result = iterrrImpl(iterIsh, flattenNestedDotExprCall body)
   echo "## ", repr(iterIsh), " >< ", repr(body)
   footer
 
 macro `!>`*(iterIsh, body, code): untyped =
-  result = iterrrImpl(iterIsh, body, code)
+  result = iterrrImpl(iterIsh, flattenNestedDotExprCall body, code)
   echo "#["
   echo repr(iterIsh), " >< ", repr(body), ":\n", indent(repr code, 4)
   echo "#]"
   footer
 
-# TODO support multi line
-template iterrr*(iterIsh, body): untyped =
-  iterIsh |> body
-
 template iterrr*(iterIsh, body, code): untyped =
   iterIsh |> body:
     code
+
+macro iterrr*(iterIsh, body): untyped =
+  case body.kind:
+  of nnkStmtList:
+    var calls = body.toseq
+    let maybeCode = calls[^1][^1]
+
+    if maybeCode.kind == nnkStmtList:
+      calls[^1].del calls[^1].len - 1
+      iterrrImpl iterIsh, calls, maybeCode
+
+    else:
+      iterrrImpl iterIsh, calls
+
+  of nnkCall:
+    iterrrImpl iterIsh, flattenNestedDotExprCall body
+  
+  else:
+    raise newException(ValueError, "invalid type")
 
 # ---------------------------------------------
 
