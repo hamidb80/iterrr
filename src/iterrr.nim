@@ -1,4 +1,4 @@
-import std/[strutils, sequtils, sugar]
+import std/[strutils, sequtils]
 import std/macros, macroplus
 import ./iterrr/[reducers, helper, iterators]
 
@@ -45,16 +45,16 @@ proc getIteratorIdents(call: NimNode): seq[NimNode] =
   else:
     @[]
 
+proc buildBracketExprOf(id: NimNode, len: int): seq[NimNode] =
+  for i in (0..<len):
+    result.add newTree(nnkBracketExpr, id, newIntLitNode i)
+
 func replacedIteratorIdents(expr: NimNode, aliases: seq[NimNode]): NimNode =
   case aliases.len:
   of 0: expr
   of 1: expr.replacedIdent(aliases[0], ident "it")
   else:
-    let replaceMents = collect:
-      for i in (0..aliases.high):
-        newTree(nnkBracketExpr, ident "it", newIntLitNode i)
-
-    expr.replacedIdents(aliases, replaceMents)
+    expr.replacedIdents(aliases, buildBracketExprOf(ident"it", aliases.len))
 
 proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
   var hasReducer = false
@@ -172,7 +172,17 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
 
     elif hasInlineReducer:
       if ipack.reducer.idents.len == 2:
-        code.replacedIdents(ipack.reducer.idents, [accIdent, itIdent])
+        case ipack.reducer.idents[1].kind:
+        of nnkIdent:
+          code.replacedIdents(ipack.reducer.idents, [accIdent, itIdent])
+        of nnkTupleConstr:
+          let 
+            nn = ipack.reducer.idents[1].toseq
+            rr = buildBracketExprOf(ident "it", nn.len)
+          code.replacedIdents(ipack.reducer.idents[0] & nn, @[accIdent] & rr)
+        else:
+          # TODO easier error
+          raise newException(ValueError, "invalid inplace reducer custom ident type")
       else:
         code
 
@@ -199,9 +209,9 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
 
       of hoBreackIf:
         quote:
-          if `p`: 
+          if `p`:
             break `mainLoopIdent`
-          else: 
+          else:
             `loopBody`
 
 

@@ -188,8 +188,8 @@ let summ = (1..10) |> reduce[acc, n](0):
 let summ2 = (1..10) |> reduce[acc, n](0, acc * 2):
   acc += n
 
-# TODO
-reduce[acc, (n1, n2, ...)](...)
+(1..10) |> reduce[acc, (n1, n2, ...)](...):
+  ...
 ```
 
 ### Don't Wanna Use Reducer?
@@ -266,6 +266,9 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 :: [PMunch](https://github.com/PMunch/)
 
 ## Change Logs
+### `0.3.3` -> `0.3.4`
+- add unpack custom ident for `reduce`
+
 ### `0.3.2` -> `0.3.3`
 - add `breakif`
 

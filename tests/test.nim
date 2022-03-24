@@ -1,4 +1,4 @@
-import std/[unittest, tables, strformat, sets, sequtils, strutils]
+import std/[unittest, tables, strformat, sets, sequtils, strutils, math]
 import iterrr
 
 
@@ -53,6 +53,14 @@ suite "custom ident :: =>":
   test "multi":
     check "hello".pairs |> map((idx, c) => c) == toseq "hello".toseq
 
+test "custom ident :: reduce": 
+  let res = "hello".pairs |> reduce[result, (idx, ch)](("", 0)):
+    result[0] &= ch
+    result[1] += idx
+
+  check:
+    res[0] == "hello"
+    res[1] == sum toseq 0..("hello".high)
 
 test "custom code":
   var acc: string
