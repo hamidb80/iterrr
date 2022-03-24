@@ -2,10 +2,14 @@ import std/[unittest, tables, strformat, sets, sequtils, strutils]
 import iterrr
 
 
-suite "chain generation":
-  test "HSlice -> _":
+suite "adapters":
+  test "map + filter":
     check ((1..5) |> map(it * it).filter(it > 10)) == @[16, 25]
 
+  test "breakif":
+    check (1..5) |> breakif(it == 2) == @[1]
+
+suite "code gen":
   test "Table.pairs -> _":
     let
       t = newOrderedTable {"a": 1, "b": 2, "c": 3}

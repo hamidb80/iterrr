@@ -47,9 +47,6 @@ study "transformer":
   block limit:
     _
 
-  block breakif:
-    _
-
   block flatten:
     let mat = [
       [1, 2, 3],

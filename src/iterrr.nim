@@ -8,7 +8,7 @@ export reducers, iterators
 
 type
   HigherOrderCallers = enum
-    hoMap, hoFilter
+    hoMap, hoFilter, hoBreackIf
 
   HigherOrderCall = object
     kind: HigherOrderCallers
@@ -75,6 +75,7 @@ proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
     case caller:
     of "map": addToCallChain hoMap
     of "filter": addToCallChain hoFilter
+    of "breakif": addToCallChain hoBreackIf
 
     elif i == calls.high: # reducer
       hasReducer = true
@@ -195,6 +196,14 @@ proc iterrrImpl(iterIsh, body: NimNode, code: NimNode = nil): NimNode =
         quote:
           if `p`:
             `loopBody`
+
+      of hoBreackIf:
+        quote:
+          if `p`: 
+            break `mainLoopIdent`
+          else: 
+            `loopBody`
+
 
   newBlockStmt:
     if noAcc:

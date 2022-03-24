@@ -84,14 +84,16 @@ and `!>` for debug mode.
 
 **here's the pattern**
 ```nim
-iterable |> map(operation).filter(cond).[reducer(args...)]
+iterable |> map(operation).filter(cond).breakif(cond).[reducer(args...)]
 ```
-you can chain as many `map` and `filter` as you want. but there is **only one** reducer.
 
 ### Main Entities:
 1. **map** :: similar to `mapIt` from `std/sequtils`
 2. **filter** :: similar to `filterIt` from `std/sequtils`
-3. **[reducer]**
+3. **breakif** :: similar to `takeWhile` in functional programming languages but negetive.
+4. **[reducer]**
+
+**NOTE:** you can chain as many `map`/`filter`/... as you want in any order, but there is **only one** reducer.
 
 you can use other reducers, such as:
 * `iseq` [the default reducer] :: stores elements into a `seq`
@@ -264,6 +266,9 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 :: [PMunch](https://github.com/PMunch/)
 
 ## Change Logs
+### `0.3.2` -> `0.3.3`
+- add `breakif`
+
 ### `0.3.0` -> `0.3.2`
 * optimize `count` reducer
 * optimize compile time
