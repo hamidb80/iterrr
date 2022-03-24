@@ -122,7 +122,7 @@ did you noticed that I've just used iterators?
 using just `it` in `mapIt` and `filterIt` is just ... and makes code a little unreadable.
 
 #### remember these principles when using custom ident:
-1. if there was not custom idents, `it` is assumed
+1. if there was no custom idents, `it` is assumed
 2. if there was only 1 custom ident, the custom ident is replaced with `it`
 3. if there was more than 1 custom idents, `it` is unpacked 
 
@@ -159,7 +159,7 @@ echo s.pairs |> map($it) # works fine
 
 ### Define A Custom Reducer
 **every reducer have**: [let't name our custom reducer `zzz`]
-1. `zzzInit[T](args...): ...` :: initializes the value of accumulator(state) :: must be *generic*, can have 0 or more args.
+1. `zzzInit[T](args...): ...` :: initializes the value of accumulator(state) :: must be *generic* if has no args.
 2. `zzz(var acc, newValue): bool` :: updates the accumulator based on `newValue`, if returns false, the iteration stops.
 3. `zzzFinalizer(n): ...` :: returns the result of the accumulator.
 
