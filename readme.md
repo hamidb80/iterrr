@@ -208,11 +208,13 @@ you can use `iterrr` template instead of `|>` operator.
 
 **example**:
 ```nim
+## inline
 "hello".items.iterrr filter(it != 'l').count()
 # or
 iterrr("hello".items, filter(it != 'l').count()
-# TODO
-iterrr "hello".items:
+
+# TODO multi line
+iterrr "hello".items: # or "hello".items.iterrr:
   map(...)
   filter(...)
   reduce[result, num](0):
