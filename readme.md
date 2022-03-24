@@ -213,6 +213,7 @@ you can use `iterrr` template instead of `|>` operator.
 # or
 iterrr("hello".items, filter(it != 'l').count()
 
+## multi line
 iterrr "hello".items: # or "hello".items.iterrr:
   map(...)
   filter(...)
