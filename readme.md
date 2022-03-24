@@ -183,7 +183,7 @@ let summ = (1..10) |> reduce[acc, n](0):
   acc += n
 
 ## custom idents + finalizer
-let summ = (1..10) |> reduce[acc, n](0, acc * 2):
+let summ2 = (1..10) |> reduce[acc, n](0, acc * 2):
   acc += n
 
 # TODO
