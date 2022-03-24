@@ -185,6 +185,9 @@ let summ = (1..10) |> reduce[acc, n](0):
 ## custom idents + finalizer
 let summ = (1..10) |> reduce[acc, n](0, acc * 2):
   acc += n
+
+# TODO
+reduce[acc, (n1, n2, ...)](...)
 ```
 
 ### Don't Wanna Use Reducer?
@@ -203,9 +206,15 @@ you can use `iterrr` template instead of `|>` operator.
 
 **example**:
 ```nim
-check "hello".items.iterrr filter(it != 'l').count()
+"hello".items.iterrr filter(it != 'l').count()
 # or
-check iterrr("hello".items, filter(it != 'l').count()
+iterrr("hello".items, filter(it != 'l').count()
+# TODO
+iterrr "hello".items:
+  map(...)
+  filter(...)
+  reduce[result, num](0):
+    
 ```
 
 ## do nested with `ifor`
