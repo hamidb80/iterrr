@@ -53,7 +53,7 @@ suite "custom ident :: =>":
   test "multi":
     check "hello".pairs |> map((idx, c) => c) == toseq "hello".toseq
 
-suite "custom ident :: reduce": 
+suite "custom ident :: reduce":
   test "1":
     let res = (1..10) |> reduce[result, n](0):
       result += n
@@ -132,7 +132,7 @@ suite "non-operator":
       each(n):
         acc.add n
 
-    check acc == @[2,3,4]
+    check acc == @[2, 3, 4]
 
 suite "reducers":
   let
@@ -200,6 +200,17 @@ suite "ifor":
       acc.add n1*100 + n2*10 + n3
 
     check acc == @[134, 224, 233]
+
+  test "breakif":
+    var acc: seq[seq[int]]
+    ifor [x, y] in [1..3,
+                  breakif x == 2,
+                  1..4]:
+
+      acc.add @[x, y]
+
+    check acc.allIt it[0] == 1
+
 
   test "break_custom_loop":
     var c = 0

@@ -307,6 +307,13 @@ macro ifor*(header, body): untyped =
           if `stmt`:
             `result`
 
+      of "breakif":
+        result = quote:
+          if `stmt`:
+            break
+          else:
+            `result`
+
       else:
         raise newException(ValueError, "invalid entity")
 

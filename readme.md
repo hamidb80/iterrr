@@ -268,6 +268,9 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 :: [PMunch](https://github.com/PMunch/)
 
 ## Change Logs
+### `0.3.5` -> `0.3.6`
+- add `breakif` for `ifor`
+
 ### `0.3.0` -> `0.3.5`
 - add unpack custom ident for `reduce`
 - add multi line support for `iterrr` (non operator version)
