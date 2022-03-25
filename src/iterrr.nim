@@ -299,17 +299,17 @@ macro ifor*(header, body): untyped =
   for entity in header[InfixRightSide].rchildren:
     case entity.kind:
     of nnkCommand:
-      let stmt = entity[CommandBody]
+      let expr = entity[CommandBody]
 
       case entity[CommandIdent].strVal:
       of "filter":
         result = quote:
-          if `stmt`:
+          if `expr`:
             `result`
 
       of "breakif":
         result = quote:
-          if `stmt`:
+          if `expr`:
             break
           else:
             `result`
