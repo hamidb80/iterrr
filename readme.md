@@ -204,7 +204,7 @@ you can do it with `each(arg1, arg2,...)`. [arguments semantic is the same as cu
 ```
 
 ### Non Operator Version
-you can use `iterrr` template instead of `|>` operator.
+you can use `iterrr` instead of `|>` operator.
 
 **example**:
 ```nim
