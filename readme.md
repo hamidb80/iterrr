@@ -197,7 +197,7 @@ let summ2 = (1..10) |> reduce[acc, n](0, acc * 2):
 :: [@beef331](https://github.com/beef331) AKA beef.
 
 I'm agree with beef. it happens a lot. 
-you can do it with `do(arg1, arg2,...)`. [arguments semantic is the same as to custom ident]
+you can do it with `each(arg1, arg2,...)`. [arguments semantic is the same as to custom ident]
 ```nim
 (1..10) |> filter(it in 3..5).each(num):
   echo num
