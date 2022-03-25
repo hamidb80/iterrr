@@ -211,7 +211,7 @@ you can use `iterrr` instead of `|>` operator.
 ## inline
 "hello".items.iterrr filter(it != 'l').count()
 # or
-iterrr("hello".items, filter(it != 'l').count()
+iterrr "hello".items, filter(it != 'l').count()
 
 ## multi line
 iterrr "hello".items: # or "hello".items.iterrr:
