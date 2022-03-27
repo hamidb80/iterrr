@@ -225,6 +225,8 @@ iterrr "hello".items: # or "hello".items.iterrr:
 there is also a DSL to do nested for loops. 
 for now see `tests/test.nim`.
 
+TODO: add doc for `ifor`
+
 ## Inspirations
 1. [zero_functional](https://github.com/zero-functional/zero-functional)
 2. [itertools](https://github.com/narimiran/itertools)
