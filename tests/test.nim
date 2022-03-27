@@ -7,7 +7,7 @@ suite "adapters":
     check ((1..5) |> map(it * it).filter(it > 10)) == @[16, 25]
 
   test "breakif":
-    check (1..5) |> breakif(it == 2) == @[1]
+    check (1..5) |> map(it ^ 2).breakif(it == 4) == @[1]
 
 suite "code gen":
   test "Table.pairs -> _":
