@@ -181,9 +181,11 @@ proc iterrrImpl(iterIsh: NimNode, calls: seq[NimNode],
           let
             customIdents = ipack.reducer.idents[1].toseq
             repls = buildBracketExprOf(ident "it", customIdents.len)
-          code.replacedIdents(ipack.reducer.idents[0] & customIdents, @[accIdent] & repls)
+          code.replacedIdents(ipack.reducer.idents[0] & customIdents, @[
+              accIdent] & repls)
         else:
-          raise newException(ValueError, "invalid inplace reducer custom ident type") # TODO easier error
+          raise newException(ValueError,
+              "invalid inplace reducer custom ident type") # TODO easier error
       else:
         code
 
@@ -282,7 +284,7 @@ macro iterrr*(iterIsh, body): untyped =
 
   of nnkCall:
     iterrrImpl iterIsh, flattenNestedDotExprCall body
-  
+
   else:
     raise newException(ValueError, "invalid type")
 
@@ -290,53 +292,70 @@ macro iterrr*(iterIsh, body): untyped =
 
 macro ifor*(header, body): untyped =
   assert matchInfix(header, "in")
-  assert header[InfixLeftSide..InfixRightSide].allit it.kind == nnkBracket
+  assert header[InfixSides].allit it.kind == nnkBracket
 
   result = body
   let idents = header[InfixLeftSide]
   var i = idents.len - 1
 
   for entity in header[InfixRightSide].rchildren:
-    case entity.kind:
-    of nnkCommand:
-      let expr = entity[CommandBody]
+    result = 
+      case entity.kind:
+      of nnkCommand:
+        let expr = entity[CommandBody]
 
-      case entity[CommandIdent].strVal:
-      of "filter":
-        result = quote:
-          if `expr`:
+        case entity[CommandIdent].strVal:
+        of "filter":
+          quote:
+            if `expr`:
+              `result`
+
+        of "breakif":
+          quote:
+            if `expr`:
+              break
+            else:
+              `result`
+
+        else:
+          raise newException(ValueError, "invalid entity")
+
+      of nnkExprEqExpr:
+        case entity[0][CommandIdent].strVal:
+        of "state":
+          let 
+            stateVar = entity[0][CommandArgs[0]]
+            stateVal = entity[1]
+
+          expectKind stateVar, nnkIdent
+          
+          quote:
+            let `stateVar` = `stateVal`
             `result`
 
-      of "breakif":
-        result = quote:
-          if `expr`:
-            break
-          else:
-            `result`
+        else:
+          raise newException(ValueError, "invalid entity")
 
       else:
-        raise newException(ValueError, "invalid entity")
+        let
+          needUnpack = idents[i].kind == nnkTupleConstr
+          iterId =
+            if needUnpack:
+              toVarTuple idents[i]
+            else:
+              idents[i]
 
-    else:
-      let
-        needUnpack = idents[i].kind == nnkTupleConstr
-        iterId =
-          if needUnpack:
-            toVarTuple idents[i]
-          else:
-            idents[i]
+          blockId =
+            if needUnpack:
+              ident "block_" & idents[i].toseq.mapit(it.strval).join "_"
+            else:
+              ident "block_" & iterId.strval
 
-        blockId =
-          if needUnpack:
-            ident "block_" & idents[i].toseq.mapit(it.strval).join "_"
-          else:
-            ident "block_" & iterId.strval
-
-      dec i
-      result = quote:
-        block `blockId`:
-          for `iterId` in `entity`:
-            `result`
+        dec i
+        quote:
+          block `blockId`:
+            for `iterId` in `entity`:
+              `result`
 
   # echo treerepr result
   # echo repr result

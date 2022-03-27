@@ -202,15 +202,16 @@ suite "ifor":
     check acc == @[134, 224, 233]
 
   test "breakif":
-    var acc: seq[seq[int]]
+    ifor [x, y] in [1..3, breakif x == 2, 1..4]:
+      check x == 1
+
+  test "state":
     ifor [x, y] in [1..3,
-                  breakif x == 2,
-                  1..4]:
+                  state xs = $x,
+                  filter xs != "2",
+                  3..5]:
 
-      acc.add @[x, y]
-
-    check acc.allIt it[0] == 1
-
+      check xs != "2"
 
   test "break_custom_loop":
     var c = 0
