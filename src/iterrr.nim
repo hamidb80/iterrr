@@ -141,16 +141,19 @@ proc iterrrImpl(iterIsh: NimNode, calls: seq[NimNode],
         quote:
           var `accIdent` = `initialValue`
 
-      else:
-        let 
-          dtype = detectType iterIsh:
-            ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
-
-          reducerInitCall = newCall(newTree(nnkBracketExpr, reducerInitProcIdent, dtype)).add:
-            ipack.reducer.params
+      elif ipack.reducer.params.len > 0:
+        let reducerInitCall = newCall(reducerInitProcIdent).add:
+          ipack.reducer.params
 
         quote:
           var `accIdent` = `reducerInitCall`
+
+      else:
+        let dtype = detectType iterIsh:
+          ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
+
+        quote:
+          var `accIdent` = `reducerInitProcIdent`[`dtype`]()
 
     accFinalizeCall =
       if hasInplaceReducer:
@@ -296,7 +299,7 @@ macro ifor*(header, body): untyped =
   var i = idents.len - 1
 
   for entity in header[InfixRightSide].rchildren:
-    result = 
+    result =
       case entity.kind:
       of nnkCommand:
         let expr = entity[CommandBody]
@@ -320,12 +323,12 @@ macro ifor*(header, body): untyped =
       of nnkExprEqExpr:
         case entity[0][CommandIdent].strVal:
         of "state":
-          let 
+          let
             stateVar = entity[0][CommandArgs[0]]
             stateVal = entity[1]
 
           expectKind stateVar, nnkIdent
-          
+
           quote:
             let `stateVar` = `stateVal`
             `result`

@@ -161,7 +161,7 @@ echo s.pairs |> map($it) # works fine
 
 ### Define A Custom Reducer
 **every reducer have**: [let't name our custom reducer `zzz`]
-1. `zzzInit[T](args...): ...` :: initializes the value of accumulator(state) :: must be *generic*.
+1. `zzzInit[T](args...): ...` :: initializes the value of accumulator(state) :: must be *generic* if had no args.
 2. `zzz(var acc, newValue): bool` :: updates the accumulator based on `newValue`, if returns false, the iteration stops.
 3. `zzzFinalizer(n): ...` :: returns the result of the accumulator.
 
@@ -273,7 +273,6 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 ### `0.3.5` -> `0.3.8`
 - add `breakif` to `ifor`
 - add `state` to `ifor`
-- make generic parameter necessary for every reducers
 
 ### `0.3.0` -> `0.3.5`
 - add unpack custom ident for `reduce`

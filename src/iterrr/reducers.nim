@@ -134,7 +134,7 @@ type StrJoinState = object
 
 func strJoinInit*[T](): StrJoinState = discard
 
-func strJoinInit*[T](separator: string): StrJoinState =
+func strJoinInit*(separator: string): StrJoinState =
   StrJoinState(sep: separator)
 
 func strJoin*[T](res: var StrJoinState, s: T): bool =
