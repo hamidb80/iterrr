@@ -57,7 +57,6 @@ study "transformer":
             skipAfter it
             cycleAfter it
 
-
   block flatten: # is not possible
     let mat = [
       [1, 2, 3],
@@ -65,5 +64,8 @@ study "transformer":
       [7, 8, 9]
     ]
 
-    mat.flatItems |> map(it ^ 2).filter(it.sum > 20).each(row):
+    mat.items |> flatten() |> map(it ^ 2).filter(it.sum > 20) |> bulk()/window(10) |> each(row):
       echo row
+
+study "options":
+  (1..10) |> filter[n](n > 10).options(skip=3, limit=4)

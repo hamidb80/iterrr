@@ -270,7 +270,7 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 :: [PMunch](https://github.com/PMunch/)
 
 ## Change Logs
-### `0.3.5` -> `0.3.8`
+### `0.3.5` -> `0.3.7`
 - add `breakif` to `ifor`
 - add `state` to `ifor`
 
