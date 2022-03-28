@@ -38,16 +38,27 @@ study "filter.[reducer]":
 
 study "transformer":
   block cycle:
-    (1..10) |> filter(it in 3..5).cycle(7).each(number):
+    (1..10) |> filter(it in 3..5).skip(1).cycle(7).each(number):
       echo number # 3 4 5 3 4 5 3
 
-  block skip:
-    _
+    var skipState1 = initSkip 7
+    skipLoopWrapper:
+      
+      var cycleState1 = initCycle 7
+      cycleLoopWrapper:
+      
+        for it in 1..10:
+          if it in 3..5:
+            skipBefore it
+            cycleBefore it
 
-  block limit:
-    _
+            echo it
 
-  block flatten:
+            skipAfter it
+            cycleAfter it
+
+
+  block flatten: # is not possible
     let mat = [
       [1, 2, 3],
       [4, 5, 6],

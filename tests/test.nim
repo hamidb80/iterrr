@@ -10,7 +10,7 @@ suite "adapters":
     check (1..5) |> map(it ^ 2).breakif(it == 4) == @[1]
 
 suite "code gen":
-  test "Table.pairs -> _":
+  test "Table.pairs":
     let
       t = newOrderedTable {"a": 1, "b": 2, "c": 3}
       res = t.pairs |> map(it[0] & ": " & $it[1]).strJoin(", ")
@@ -192,9 +192,7 @@ suite "ifor":
   test "filter":
     var acc: seq[int]
 
-    ifor [n1, n2, n3] in [1..2,
-                          1..3,
-                          1..4,
+    ifor [n1, n2, n3] in [1..2, 1..3, 1..4,
                           filter n1+n2+n3 == 8]:
 
       acc.add n1*100 + n2*10 + n3
@@ -215,9 +213,7 @@ suite "ifor":
 
   test "break_custom_loop":
     var c = 0
-    ifor [x, y, z] in [1..3,
-                       1..3,
-                       1..3]:
+    ifor [x, y, z] in [1..3, 1..3, 1..3]:
       inc c
       break block_x
 
