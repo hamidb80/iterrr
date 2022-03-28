@@ -124,7 +124,7 @@ proc iterrrImpl(iterIsh: NimNode, calls: seq[NimNode],
   let
     hasCustomCode = code != nil
     noAcc = hasCustomCode and ipack.reducer.caller.strval == "each"
-    hasInlineReducer = ipack.reducer.caller.strVal == "reduce"
+    hasInplaceReducer = ipack.reducer.caller.strVal == "reduce"
 
     accIdent = ident "acc"
     itIdent = ident "it"
@@ -136,27 +136,24 @@ proc iterrrImpl(iterIsh: NimNode, calls: seq[NimNode],
     accDef =
       if noAcc: newEmptyNode()
 
-      elif hasInlineReducer:
+      elif hasInplaceReducer:
         let initialValue = ipack.reducer.params[0]
         quote:
           var `accIdent` = `initialValue`
 
-      elif ipack.reducer.params.len > 0:
-        var reducerInitCall = newCall(reducerInitProcIdent)
-        reducerInitCall.add ipack.reducer.params
+      else:
+        let 
+          dtype = detectType iterIsh:
+            ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
+
+          reducerInitCall = newCall(newTree(nnkBracketExpr, reducerInitProcIdent, dtype)).add:
+            ipack.reducer.params
 
         quote:
           var `accIdent` = `reducerInitCall`
 
-      else:
-        let dtype = detectType iterIsh:
-          ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
-
-        quote:
-          var `accIdent` = `reducerInitProcIdent`[`dtype`]()
-
     accFinalizeCall =
-      if hasInlineReducer:
+      if hasInplaceReducer:
         if ipack.reducer.params.len == 2: # has finalizer
           if ipack.reducer.idents.len == 2:
             ipack.reducer.params[1].replacedIdent(ipack.reducer.idents[0], accIdent)
@@ -172,7 +169,7 @@ proc iterrrImpl(iterIsh: NimNode, calls: seq[NimNode],
     if noAcc:
       code.replacedIteratorIdents(ipack.reducer.params)
 
-    elif hasInlineReducer:
+    elif hasInplaceReducer:
       if ipack.reducer.idents.len == 2:
         case ipack.reducer.idents[1].kind:
         of nnkIdent:
