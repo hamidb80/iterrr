@@ -13,7 +13,7 @@ suite "code gen":
   test "Table.pairs -> _":
     let
       t = newOrderedTable {"a": 1, "b": 2, "c": 3}
-      res = t.pairs !> map(it[0] & ": " & $it[1]).strJoin(", ")
+      res = t.pairs |> map(it[0] & ": " & $it[1]).strJoin(", ")
 
     check res == "a: 1, b: 2, c: 3"
 
