@@ -36,17 +36,17 @@ study "filter.[reducer]":
       _
 
 
-study "transformer":
+study "adapter":
   block cycle:
     (1..10) |> filter(it in 3..5).skip(1).cycle(7).each(number):
       echo number # 3 4 5 3 4 5 3
 
     var skipState1 = initSkip 7
     skipLoopWrapper:
-      
+
       var cycleState1 = initCycle 7
       cycleLoopWrapper:
-      
+
         for it in 1..10:
           if it in 3..5:
             skipBefore it
@@ -57,24 +57,44 @@ study "transformer":
             skipAfter it
             cycleAfter it
 
-  block flatten: # is not possible
+
+  block `all numbers inside range`:
+    let ranges = [1..10, 3..7, 8..9, 4..6]
+
+    iterator expand(itr: Iterrr[Hslice[int, int]]): int {.adapter.} =
+      for rng in itr:
+        for n in rng:
+          yield n ## REDUCE
+
+
+  block `flatten&group`:
     let mat = [
       [1, 2, 3],
       [4, 5, 6],
       [7, 8, 9]
     ]
 
-    mat.items |> flatten() |> map(it ^ 2).filter(it.sum > 20) |> bulk()/window(10) |> each(row):
-      echo row
+    mat.items |> flatten().map(it ^ 2).group(3).iseq()
 
-    iterator flatten(iter, arg1, arg2) [count=0]  (x, y):
-      over iter as it:
-        if count == 0:
-          REDUCE # yeild it
+    iterator flatten(matrix: Iterrr[openArray[int]]): int {.adapter.} =
+      for row in matrix:
+        for n in row:
+          yield n
 
-        else:
-          for t in it .. 9:
-            REDUCE # yeild t
+    iterator group[T](numbers: Iterrr[T], maxLen: int): seq[T] {.adapter: (
+      states: [temp = newseq[T]()]
+    ).} =
+      # before
+      assert maxlen > 0
 
-study "options":
-  (1..10) |> filter[n](n > 10).options(skip=3, limit=4)
+      # main loop
+      for n in numbers:
+        temp.add n
+
+        if temp.len == maxLen:
+          yield temp
+          reset temp
+
+      # after
+      if temp.len != 0:
+        yield temp
