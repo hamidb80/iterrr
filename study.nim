@@ -67,15 +67,14 @@ study "transformer":
     mat.items |> flatten() |> map(it ^ 2).filter(it.sum > 20) |> bulk()/window(10) |> each(row):
       echo row
 
-    defIterrr flatten(iter, arg1, arg2) [count=0]  (x, y):
-
+    iterator flatten(iter, arg1, arg2) [count=0]  (x, y):
       over iter as it:
         if count == 0:
-          yeild it
+          REDUCE # yeild it
 
         else:
           for t in it .. 9:
-            yeild t
+            REDUCE # yeild t
 
 study "options":
   (1..10) |> filter[n](n > 10).options(skip=3, limit=4)

@@ -141,19 +141,16 @@ proc iterrrImpl(iterIsh: NimNode, calls: seq[NimNode],
         quote:
           var `accIdent` = `initialValue`
 
-      elif ipack.reducer.params.len > 0:
-        let reducerInitCall = newCall(reducerInitProcIdent).add:
-          ipack.reducer.params
+      else:
+        let 
+          dtype = detectType iterIsh:
+            ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
+
+          reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent, dtype).newCall.add:
+            ipack.reducer.params
 
         quote:
           var `accIdent` = `reducerInitCall`
-
-      else:
-        let dtype = detectType iterIsh:
-          ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
-
-        quote:
-          var `accIdent` = `reducerInitProcIdent`[`dtype`]()
 
     accFinalizeCall =
       if hasInplaceReducer:
