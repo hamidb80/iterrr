@@ -35,7 +35,6 @@ study "filter.[reducer]":
     if Cond:
       _
 
-
 study "adapter":
   block cycle:
     (1..10) |> filter(it in 3..5).skip(1).cycle(7).each(number):
@@ -57,7 +56,6 @@ study "adapter":
             skipAfter it
             cycleAfter it
 
-
   block `all numbers inside range`:
     let ranges = [1..10, 3..7, 8..9, 4..6]
 
@@ -66,35 +64,39 @@ study "adapter":
         for n in rng:
           yield n ## REDUCE
 
-
-  block `flatten&group`:
+  block `flatten`:
     let mat = [
       [1, 2, 3],
       [4, 5, 6],
       [7, 8, 9]
     ]
 
-    mat.items |> flatten().map(it ^ 2).group(3).iseq()
-
     iterator flatten(matrix: Iterrr[openArray[int]]): int {.adapter.} =
-      for row in matrix:
-        for n in row:
+      block loopWrapper:
+        for n in it:
           yield n
 
-    iterator group[T](numbers: Iterrr[T], maxLen: int): seq[T] {.adapter: (
-      states: [temp = newseq[T]()]
-    ).} =
-      # before
-      assert maxlen > 0
 
-      # main loop
-      for n in numbers:
-        temp.add n
+    mat.items |> 
+      flatten().
+      filter(it > 2)
 
-        if temp.len == maxLen:
+
+  block `group`:
+    iterator group[T](numbers: Iterrr[T], maxLen: int): seq[T] {.
+      transformer: [temp = newseq[T]()].} =
+
+      block before:
+        assert maxlen > 0
+
+      block loopWrapper:
+        for n in numbers:
+          temp.add n
+
+          if temp.len == maxLen:
+            yield temp
+            reset temp
+
+      block after:
+        if temp.len != 0:
           yield temp
-          reset temp
-
-      # after
-      if temp.len != 0:
-        yield temp

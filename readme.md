@@ -219,9 +219,17 @@ iterrr "hello".items: # or "hello".items.iterrr:
   filter(...)
   reduce[result, num](0):
     ...
+
+## hey but you can use good ol' `|>`
+"hello".items |> # or "hello".items.iterrr:
+  map(...).
+  filter(...).
+  reduce[result, num](0):
+    ...
+
 ```
 
-## do nested with `ifor`
+## Do Nested With `ifor` `{.experimental.}`
 there is also a DSL to do nested for loops. 
 for now see `tests/test.nim`.
 
