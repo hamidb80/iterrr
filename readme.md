@@ -1,13 +1,11 @@
 # iterrr!
 iterate faster ... 🏎️.
-write higher-order functions, get its imperative style at the compile time!
-
-if you know the problem, just jump to [Usage](#Usage)
+Write higher-order functions, get its imperative style at the compile time!
 
 ## The Problem
-declarative programming is good, right? 
+ِDeclarative programming is good, right? 
 
-instead of 
+Instead of
 ```nim
 var result: seq[int]
 
@@ -16,19 +14,17 @@ for it in list:
     result.add it * 2
 ```
 
-you can easily write:
+You can easily write:
 ```nim
 list.filterIt(it mod 2 == 0).mapIt(it * 2)
 ```
+Which is a lot cleaner.
 
-which is a lot cleaner.
+`std/sequtils` already gives you that power. but there is another problem; it creates intermediate `seq`s. as you may know, in some functional programming languages like Haskell, the result of these higher-order funcions, are not evaluated until they are needed. [it's called **lazy evaluation**]
 
-`std/sequtils` already gives us that power. but there is another problem. it creates intermediate `seq`s. as you may know, in some functional programming languages like Haskell, the result of these higher-order funcions, are not evaluated until they are needed. [it's called **lazy evaluation**]
+In other words, there is no intermediate `seq`s.
 
-In other words, there is not intermediate `seq`s.
-
-actually, the latter code is not equal to the first one. actually it is almost equal to:
-
+Actually, the latter code[using `std/sequtils`] is not equal to the first one. actually it is almost equal to:
 ```nim
 var result1: seq[int]
 for it in list:
@@ -42,19 +38,15 @@ for it in result1:
 result2 # do whatever you want with the final result
 ```
 
-another problem with `std/seqtutils` is, that you have to convert your iterable to `seq` before using `filterIt` or `mapIt` or `...`.
-
-I mean:
+Another problem with `std/seqtutils` is that you have to convert your iterable to `seq` before using it with `filterIt`/`mapIt`/`...`
 ```nim
 (1..20).filterIt(it > 5) # doesn't work
 (1..20).toseq.filterIt(it > 5) # works fine
 ```
-which can be quite expensive (time/resource consuming) task.
+Which can be quite expensive(time/resource consuming) task.
 
 ## The Solution
-imagine yourself writing almost the same style, while getting the same benefit of imprative style.
-
-well, we are not alone, we have macros!
+`iterrr` uses the ultimate power of meta programming to bring you the what you just have wished.
 
 **by writing this:**
 ```nim
