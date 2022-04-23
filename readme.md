@@ -276,6 +276,7 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 - remove `ifor`
 - add custom adapter
 - remove default reducer
+- replace `i` prefix with `to` for`iseq` & `iHashset` reducers
 
 ### `0.3.5` -> `0.3.8`
 - add `breakif` to `ifor`
