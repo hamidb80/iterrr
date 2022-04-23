@@ -95,8 +95,8 @@ proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
   if not hasReducer:
     result.reducer = ReducerCall(caller: ident "iseq")
 
-proc detectType(iterIsh: NimNode, mapsParam: seq[NimNode]): NimNode =
-  var target = inlineQuote default(typeof(`iterIsh`))
+proc detectType(itrbl: NimNode, mapsParam: seq[NimNode]): NimNode =
+  var target = inlineQuote default(typeof(`itrbl`))
 
   for operation in mapsParam:
     target = replacedIdent(operation, ident "it", target)
@@ -114,7 +114,7 @@ proc inspect(s: seq[NimNode]): seq[NimNode] {.used.} =
 
   s
 
-proc iterrrImpl(iterIsh: NimNode, calls: seq[NimNode],
+proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     code: NimNode = nil): NimNode =
 
   # var ipack = toIterrrPack inspect calls
@@ -143,7 +143,7 @@ proc iterrrImpl(iterIsh: NimNode, calls: seq[NimNode],
 
       else:
         let 
-          dtype = detectType iterIsh:
+          dtype = detectType itrbl:
             ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
 
           reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent, dtype).newCall.add:
@@ -218,7 +218,7 @@ proc iterrrImpl(iterIsh: NimNode, calls: seq[NimNode],
   newBlockStmt:
     if noAcc:
       quote:
-        for `itIdent` in `iterIsh`:
+        for `itIdent` in `itrbl`:
           `loopBody`
 
     else:
@@ -226,7 +226,7 @@ proc iterrrImpl(iterIsh: NimNode, calls: seq[NimNode],
         `accDef`
 
         block `mainLoopIdent`:
-          for `itIdent` in `iterIsh`:
+          for `itIdent` in `itrbl`:
             `loopBody`
 
         `accFinalizeCall`
@@ -238,11 +238,11 @@ proc toVarTuple(n: NimNode): NimNode =
 
 # main ---------------------------------------
 
-macro `|>`*(iterIsh, body): untyped =
-  iterrrImpl iterIsh, flattenNestedDotExprCall body
+macro `|>`*(itrbl, body): untyped =
+  iterrrImpl itrbl, flattenNestedDotExprCall body
 
-macro `|>`*(iterIsh, body, code): untyped =
-  iterrrImpl iterIsh, flattenNestedDotExprCall body, code
+macro `|>`*(itrbl, body, code): untyped =
+  iterrrImpl itrbl, flattenNestedDotExprCall body, code
 
 
 template footer: untyped {.dirty.} =
@@ -250,23 +250,23 @@ template footer: untyped {.dirty.} =
   echo repr result
   echo "---------------------------------------"
 
-macro `!>`*(iterIsh, body): untyped =
-  result = iterrrImpl(iterIsh, flattenNestedDotExprCall body)
-  echo "## ", repr(iterIsh), " >< ", repr(body)
+macro `!>`*(itrbl, body): untyped =
+  result = iterrrImpl(itrbl, flattenNestedDotExprCall body)
+  echo "## ", repr(itrbl), " >< ", repr(body)
   footer
 
-macro `!>`*(iterIsh, body, code): untyped =
-  result = iterrrImpl(iterIsh, flattenNestedDotExprCall body, code)
+macro `!>`*(itrbl, body, code): untyped =
+  result = iterrrImpl(itrbl, flattenNestedDotExprCall body, code)
   echo "#["
-  echo repr(iterIsh), " >< ", repr(body), ":\n", indent(repr code, 4)
+  echo repr(itrbl), " >< ", repr(body), ":\n", indent(repr code, 4)
   echo "#]"
   footer
 
-template iterrr*(iterIsh, body, code): untyped =
-  iterIsh |> body:
+template iterrr*(itrbl, body, code): untyped =
+  itrbl |> body:
     code
 
-macro iterrr*(iterIsh, body): untyped =
+macro iterrr*(itrbl, body): untyped =
   case body.kind:
   of nnkStmtList:
     var calls = body.toseq
@@ -274,13 +274,13 @@ macro iterrr*(iterIsh, body): untyped =
 
     if maybeCode.kind == nnkStmtList:
       calls[^1].del calls[^1].len - 1
-      iterrrImpl iterIsh, calls, maybeCode
+      iterrrImpl itrbl, calls, maybeCode
 
     else:
-      iterrrImpl iterIsh, calls
+      iterrrImpl itrbl, calls
 
   of nnkCall:
-    iterrrImpl iterIsh, flattenNestedDotExprCall body
+    iterrrImpl itrbl, flattenNestedDotExprCall body
 
   else:
     raise newException(ValueError, "invalid type")
