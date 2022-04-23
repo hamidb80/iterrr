@@ -275,6 +275,7 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 ### `0.3.8` -> `0.4.0`: comming soon ...
 - remove `ifor`
 - add custom adapter
+- remove default reducer
 
 ### `0.3.5` -> `0.3.8`
 - add `breakif` to `ifor`
