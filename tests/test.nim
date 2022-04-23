@@ -13,7 +13,7 @@ suite "code gen":
   test "Table.pairs":
     let
       t = newOrderedTable {"a": 1, "b": 2, "c": 3}
-      res = t.pairs !> map(it[0] & ": " & $it[1]).strJoin(", ")
+      res = t.pairs |> map(it[0] & ": " & $it[1]).strJoin(", ")
 
     check res == "a: 1, b: 2, c: 3"
 
@@ -186,49 +186,3 @@ suite "reducers":
 
   test "iHashSet":
     check (-5..5) |> map(abs it).iHashSet() == toHashSet toseq 0..5
-
-
-suite "ifor":
-  test "filter":
-    var acc: seq[int]
-
-    ifor [n1, n2, n3] in [1..2, 1..3, 1..4,
-                          filter n1+n2+n3 == 8]:
-
-      acc.add n1*100 + n2*10 + n3
-
-    check acc == @[134, 224, 233]
-
-  test "breakif":
-    ifor [x, y] in [1..3, breakif x == 2, 1..4]:
-      check x == 1
-
-  test "state":
-    ifor [x, y] in [1..3,
-                  state xs = $x,
-                  filter xs != "2",
-                  3..5]:
-
-      check xs != "2"
-
-  test "break_custom_loop":
-    var c = 0
-    ifor [x, y, z] in [1..3, 1..3, 1..3]:
-      inc c
-      break block_x
-
-    check c == 1
-
-  test "tuple ident":
-    let qlines = [
-      "SELECT COUNT(1) as cnt",
-      "FROM people",
-      "WHERE age = 87"
-    ]
-
-    var numbers: seq[char]
-    ifor [statement, (i, ch)] in [qlines, statement.pairs]:
-      if ch in '0'..'9':
-        numbers.add ch
-
-    check numbers.join == "187"

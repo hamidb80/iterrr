@@ -142,11 +142,12 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
           var `accIdent` = `initialValue`
 
       else:
-        let 
+        let
           dtype = detectType itrbl:
             ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
 
-          reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent, dtype).newCall.add:
+          reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent,
+              dtype).newCall.add:
             ipack.reducer.params
 
         quote:
@@ -231,11 +232,6 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
         `accFinalizeCall`
 
-proc toVarTuple(n: NimNode): NimNode =
-  result = newTree(nnkVarTuple)
-  result.add n.toseq
-  result.add newEmptyNode()
-
 # main ---------------------------------------
 
 macro `|>`*(itrbl, body): untyped =
@@ -285,74 +281,3 @@ macro iterrr*(itrbl, body): untyped =
   else:
     raise newException(ValueError, "invalid type")
 
-# ---------------------------------------------
-
-macro ifor*(header, body): untyped =
-  assert matchInfix(header, "in")
-  assert header[InfixSides].allit it.kind == nnkBracket
-
-  result = body
-  let idents = header[InfixLeftSide]
-  var i = idents.len - 1
-
-  for entity in header[InfixRightSide].rchildren:
-    result =
-      case entity.kind:
-      of nnkCommand:
-        let expr = entity[CommandBody]
-
-        case entity[CommandIdent].strVal:
-        of "filter":
-          quote:
-            if `expr`:
-              `result`
-
-        of "breakif":
-          quote:
-            if `expr`:
-              break
-            else:
-              `result`
-
-        else:
-          raise newException(ValueError, "invalid entity")
-
-      of nnkExprEqExpr:
-        case entity[0][CommandIdent].strVal:
-        of "state":
-          let
-            stateVar = entity[0][CommandArgs[0]]
-            stateVal = entity[1]
-
-          expectKind stateVar, nnkIdent
-
-          quote:
-            let `stateVar` = `stateVal`
-            `result`
-
-        else:
-          raise newException(ValueError, "invalid entity")
-
-      else:
-        let
-          needUnpack = idents[i].kind == nnkTupleConstr
-          iterId =
-            if needUnpack:
-              toVarTuple idents[i]
-            else:
-              idents[i]
-
-          blockId =
-            if needUnpack:
-              ident "block_" & idents[i].toseq.mapit(it.strval).join "_"
-            else:
-              ident "block_" & iterId.strval
-
-        dec i
-        quote:
-          block `blockId`:
-            for `iterId` in `entity`:
-              `result`
-
-  # echo treerepr result
-  # echo repr result
