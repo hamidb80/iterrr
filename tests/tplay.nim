@@ -3,30 +3,31 @@ import ../src/iterrr
 
 # impl -----------------------------------
 
-iterator cycle(itrbl: Iter; limit: int): Iter {.adapter.} =
+iterator cycle(itrbl: Iter; `limit`: int): Iter {.adapter.} =
   block cycleLoop:
-    var c = 0
+    var `c` = 0
     while true:
       for it in itrbl:
         yield it
-        inc c
-        if c == limit:
+        inc `c`
+        if `c` == `limit`:
           break cycleLoop
 
-      if c == limit:
+      if `c` == `limit`:
         break cycleLoop
 
 # dumptree:
 when false:
-  macro cycle(itrbl: untyped; limit: int): untyped =
+  ## identifiers in back-tick are uniq
+  macro cycle(itrbl: untyped; `limit`: int): untyped =
     let body = quote:
-      var c = 0
+      var `c` = 0
       while true:
         for it in itrbl:
           yield it
-          inc c
+          inc `c`
 
-        if c == limit:
+        if `c` == `limit`:
           break
 
     yieldPaths = [

@@ -155,9 +155,8 @@ func findPaths(node: NimNode, fn: proc(node: NimNode): bool): seq[seq[int]] =
 type
   AdapterInfo = ref object
     wrapperCode: NimNode
-    args: seq[NimNode] ## TODO
     loopPath: seq[int]
-    yeildPaths: seq[seq[int]]
+    yeildPaths, argsValuePaths, uniqIdentPaths: seq[seq[int]] # FIXME refactor based on this
 
 var customAdapters {.compileTime.}: Table[string, AdapterInfo]
 
@@ -165,22 +164,31 @@ var customAdapters {.compileTime.}: Table[string, AdapterInfo]
 
 macro adapter*(iterDef): untyped =
   expectKind iterDef, nnkIteratorDef
-  let args = iterdef.RoutineArguments
-  assert args.len >= 1
 
   let
+    args = iterdef.RoutineArguments
     itrblId = args[0][IdentDefName]
-    ypaths = findPaths(iterDef[RoutineBody], (n: NimNode) => n.kind == nnkYieldStmt)
-    mainloopPaths = findPaths(iterDef[RoutineBody],
+
+  var
+    adptr = AdapterInfo()
+    body = iterDef[RoutineBody]
+    argsDef = newTree nnkLetSection
+
+  for i, a in args[1..^1]:
+    argsDef.add newIdentDefs(a[IdentDefName], a[IdentDefType], newNilLit())
+    adptr.argsValuePaths.add @[0, i, 2]
+
+  body.insert 0, argsDef
+
+  adptr.wrapperCode = body
+  adptr.uniqIdentPaths = findPaths(body, (n: NimNode) => n.kind == nnkAccQuoted)
+  adptr.yeildPaths = findPaths(body, (n: NimNode) => n.kind == nnkYieldStmt)
+  adptr.loopPath = block:
+    let temp = findPaths(body,
       (n: NimNode) => n.kind == nnkForStmt and eqIdent(n[ForRange], itrblId))
 
-  assert mainloopPaths.len == 1, "there must be only one main loop"
-
-  let adptr = AdapterInfo(
-    wrapperCode: iterDef[RoutineBody],
-    args: args[1..^1],
-    loopPath: mainloopPaths[0],
-    yeildPaths: ypaths)
+    assert temp.len == 1, "there must be only one main loop"
+    temp[0]
 
   customAdapters[iterdef[RoutineName].strVal] = adptr
   echo repr adptr
@@ -244,8 +252,8 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         newCall(reducerFinalizerProcIdent, accIdent)
 
   var
-    wrappers: seq[tuple[code: NimNode, argsDef: seq[NimNode], params: seq[NimNode], path: seq[int]]]
-    loopBody = 
+    wrappers: seq[tuple[code: NimNode, params: seq[NimNode], info: AdapterInfo]]
+    loopBody =
       if noAcc:
         code.replacedIteratorIdents(ipack.reducer.params)
 
@@ -272,7 +280,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
             break `mainLoopIdent`
 
 
-  for call in ipack.callChain.ritems:
+  for i, call in ipack.callChain.rpairs:
     let p =
       if call.kind == hoCustom: newEmptyNode()
       else: call.param
@@ -307,15 +315,17 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
               let yval = code.getNode(yp)[0]
 
               if eqIdent(yval, ident"it"):
-                loopBody     
+                loopBody
               else:
                 quote:
                   block:
                     let `itIdent` = `yval`
                     `loopBody`
 
+          for up in adptr.uniqIdentPaths:
+            code.replaceNode up,  code.getnode(up)[0] &. $i
 
-          wrappers.add (code, adptr.args, call.params, adptr.loopPath)
+          wrappers.add (code, call.params, adptr)
           code.getNode(adptr.loopPath)[ForBody]
 
         except:
@@ -328,13 +338,12 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
   for w in wrappers:
     result = block:
-      w.code.replaceNode(w.path, result)
-      
-      var argsDef = newTree(nnkLetSection)
-      for i, a in w.argsDef:
-        argsDef.add newIdentDefs(a[IdentDefName], a[IdentDefType], w.params[i])
+      w.code.replaceNode w.info.loopPath, result
 
-      newStmtList(argsDef, w.code)
+      for i, p in w.params:
+        w.code.replaceNode w.info.argsValuePaths[i], p
+
+      w.code
 
   result = quote:
     block:
@@ -359,13 +368,13 @@ template footer: untyped {.dirty.} =
 
 macro `!>`*(itrbl, body): untyped =
   result = iterrrImpl(itrbl, flattenNestedDotExprCall body)
-  echo "## ", repr(itrbl), " >< ", repr(body)
+  echo "## ", repr(itrbl), " !> ", repr(body)
   footer
 
 macro `!>`*(itrbl, body, code): untyped =
   result = iterrrImpl(itrbl, flattenNestedDotExprCall body, code)
   echo "#["
-  echo repr(itrbl), " >< ", repr(body), ":\n", indent(repr code, 4)
+  echo repr(itrbl), " !> ", repr(body), ":\n", indent(repr code, 4)
   echo "#]"
   footer
 
