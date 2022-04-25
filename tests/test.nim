@@ -4,10 +4,10 @@ import iterrr
 
 suite "adapters":
   test "map + filter":
-    check ((1..5) |> map(it * it).filter(it > 10).iseq()) == @[16, 25]
+    check ((1..5) |> map(it * it).filter(it > 10).toSeq()) == @[16, 25]
 
   test "breakif":
-    check (1..5) |> map(it ^ 2).breakif(it == 4).iseq() == @[1]
+    check (1..5) |> map(it ^ 2).breakif(it == 4).toSeq() == @[1]
 
   test "custom":
     discard
@@ -27,36 +27,36 @@ suite "code gen":
         .filter(it != "0")
         .filter('-' in it)
         .map(parseInt it)
-        .iseq()
+        .toSeq()
 
     check res == @[-2, -1]
 
 suite "custom ident :: []":
   test "1":
-    check (1..10) |> filter[i](i < 5).iseq() == @[1, 2, 3, 4]
+    check (1..10) |> filter[i](i < 5).toSeq() == @[1, 2, 3, 4]
 
   test "1+":
-    check (1..10) |> filter[i](i <= 5).iseq() == toseq 1..5
-    check "hello".pairs |> map[i, c](i + ord(c)).iseq() == @[104, 102, 110, 111, 115]
+    check (1..10) |> filter[i](i <= 5).toSeq() == toseq 1..5
+    check "hello".pairs |> map[i, c](i + ord(c)).toSeq() == @[104, 102, 110, 111, 115]
 
   test "chain":
     let res = (1..30) |>
       map[n]($n)
       .filter[s](s.len == 1)
       .map[s](parseInt s)
-      .iseq()
+      .toSeq()
 
     check res == toseq 1..9
 
 suite "custom ident :: =>":
   test "single":
-    check (1..10) |> filter(n => n in 3..5).iseq() == @[3, 4, 5]
+    check (1..10) |> filter(n => n in 3..5).toSeq() == @[3, 4, 5]
 
   test "single inside pars":
-    check (1..10) |> filter((n) => n in 2..4).iseq() == @[2, 3, 4]
+    check (1..10) |> filter((n) => n in 2..4).toSeq() == @[2, 3, 4]
 
   test "multi":
-    check "hello".pairs |> map((idx, c) => c).iseq() == toseq "hello".toseq
+    check "hello".pairs |> map((idx, c) => c).toSeq() == toseq "hello".toseq
 
 suite "custom ident :: reduce":
   test "1":
@@ -189,5 +189,5 @@ suite "reducers":
   test "strJoin":
     check (1..4) |> strJoin(";") == "1;2;3;4"
 
-  test "iHashSet":
-    check (-5..5) |> map(abs it).iHashSet() == toHashSet toseq 0..5
+  test "toHashSet":
+    check (-5..5) |> map(abs it).toHashSet() == toHashSet toseq 0..5

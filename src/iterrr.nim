@@ -31,8 +31,10 @@ type
 # impl -----------------------------------------
 
 func `&.`(id: NimNode, str: string): NimNode =
-  expectKind id, nnkIdent
-  ident id.strVal & str
+  case id.kind:
+  of nnkIdent: ident id.strVal & str
+  of nnkAccQuoted: id[0] &. str
+  else: err "what?!+"
 
 func getIteratorIdents(call: NimNode): seq[NimNode] =
   if call[CallIdent].kind == nnkBracketExpr:
@@ -47,7 +49,7 @@ func getIteratorIdents(call: NimNode): seq[NimNode] =
     of nnkPar: @[args[0]]
     of nnkTupleConstr: args.children.toseq
     else:
-      raise newException(ValueError, "invalid custom ident style")
+      err "invalid custom ident style"
 
   else:
     @[]
@@ -107,7 +109,13 @@ func detectType(itrbl: NimNode, mapsParam: seq[NimNode]): NimNode =
   var target = inlineQuote default(typeof(`itrbl`))
 
   for operation in mapsParam:
+    # case operation.kind:
+    # of hoMap:
     target = replacedIdent(operation, ident "it", target)
+    # of hoCustom:
+    #   target = 
+    # else: 
+    #   err "impossible"
 
   inlineQuote typeof(`target`)
 
@@ -156,7 +164,7 @@ type
   AdapterInfo = ref object
     wrapperCode: NimNode
     loopPath: seq[int]
-    yeildPaths, argsValuePaths, uniqIdentPaths: seq[seq[int]] # FIXME refactor based on this
+    yeildPaths, argsValuePaths, uniqIdentPaths: seq[seq[int]]
 
 var customAdapters {.compileTime.}: Table[string, AdapterInfo]
 
@@ -212,7 +220,6 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     reducerStateUpdaterProcIdent = ipack.reducer.caller
     reducerFinalizerProcIdent = ipack.reducer.caller &. "Finalizer"
     reducerInitProcIdent = ipack.reducer.caller &. "Init"
-
     accDef =
       if noAcc: newEmptyNode()
 
@@ -223,14 +230,11 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
       else:
         let
+          # dtype = detectType itrbl:
+          #   ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
           ## TODO type checking for custom adapter
           dtype = detectType itrbl:
             ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
-            # ipack.callChain.filterIt(it.kind in {hoMap, hoCustom}).mapIt:
-              # case it.kind:
-              # of hoMap: it.param
-              # of hoCustom: it.name & "AdapterType"
-              # else: err "cannot happen"
 
           reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent,
               dtype).newCall.add:
@@ -248,7 +252,9 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
             ipack.reducer.params[1]
         else:
           accIdent
-      else:
+      elif noAcc: 
+        newEmptyNode()
+      else: 
         newCall(reducerFinalizerProcIdent, accIdent)
 
   var
@@ -269,8 +275,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
             code.replacedIdents(ipack.reducer.idents[0] & customIdents, @[
                 accIdent] & repls)
           else:
-            raise newException(ValueError,
-                "invalid inplace reducer custom ident type") # TODO easier error
+            err "invalid inplace reducer custom ident type" # TODO easier error
         else:
           code
 
@@ -323,13 +328,13 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
                     `loopBody`
 
           for up in adptr.uniqIdentPaths:
-            code.replaceNode up,  code.getnode(up)[0] &. $i
+            code.replaceNode up, code.getnode(up) &. $i
 
           wrappers.add (code, call.params, adptr)
           code.getNode(adptr.loopPath)[ForBody]
 
         except:
-          raise newException(ValueError, "not defined")
+          err "not defined"
 
 
   result = quote:
@@ -400,4 +405,4 @@ macro iterrr*(itrbl, body): untyped =
     iterrrImpl itrbl, flattenNestedDotExprCall body
 
   else:
-    raise newException(ValueError, "invalid type")
+    err "invalid type"
