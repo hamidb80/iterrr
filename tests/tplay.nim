@@ -18,7 +18,6 @@ iterator flatten(itrbl: T): itrbl[0] {.adapter.} =
     for it in it:
       yield it
 
-
 iterator group(loop: T; `every`: int): seq[T] {.adapter.} =
   var `gacc` = newseq[T]()
   for it in loop:
@@ -26,6 +25,7 @@ iterator group(loop: T; `every`: int): seq[T] {.adapter.} =
     if `gacc`.len == `every`:
       yield `gacc`
       `gacc` = @[]
+  
   
 
 # test -----------------------------------
@@ -35,7 +35,6 @@ let matrix = [
   [4, 5, 6],
   [7, 8, 9]
 ]
-
 
 echo matrix.items !> flatten().cycle(10).group(2).toseq()
 echo matrix.items !> flatten().cycle(10).toseq()
