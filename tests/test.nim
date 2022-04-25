@@ -4,10 +4,13 @@ import iterrr
 
 suite "adapters":
   test "map + filter":
-    check ((1..5) |> map(it * it).filter(it > 10)) == @[16, 25]
+    check ((1..5) |> map(it * it).filter(it > 10).iseq()) == @[16, 25]
 
   test "breakif":
-    check (1..5) |> map(it ^ 2).breakif(it == 4) == @[1]
+    check (1..5) |> map(it ^ 2).breakif(it == 4).iseq() == @[1]
+
+  test "custom":
+    discard
 
 suite "code gen":
   test "Table.pairs":
@@ -24,34 +27,36 @@ suite "code gen":
         .filter(it != "0")
         .filter('-' in it)
         .map(parseInt it)
+        .iseq()
 
     check res == @[-2, -1]
 
 suite "custom ident :: []":
   test "1":
-    check ((1..10) |> filter[i](i < 5)) == @[1, 2, 3, 4]
+    check (1..10) |> filter[i](i < 5).iseq() == @[1, 2, 3, 4]
 
   test "1+":
-    check ((1..10) |> filter[i](i <= 5)) == toseq 1..5
-    check ("hello".pairs |> map[i, c](i + ord(c))) == @[104, 102, 110, 111, 115]
+    check (1..10) |> filter[i](i <= 5).iseq() == toseq 1..5
+    check "hello".pairs |> map[i, c](i + ord(c)).iseq() == @[104, 102, 110, 111, 115]
 
   test "chain":
     let res = (1..30) |>
       map[n]($n)
       .filter[s](s.len == 1)
       .map[s](parseInt s)
+      .iseq()
 
     check res == toseq 1..9
 
 suite "custom ident :: =>":
   test "single":
-    check (1..10) |> filter(n => n in 3..5) == @[3, 4, 5]
+    check (1..10) |> filter(n => n in 3..5).iseq() == @[3, 4, 5]
 
   test "single inside pars":
-    check (1..10) |> filter((n) => n in 2..4) == @[2, 3, 4]
+    check (1..10) |> filter((n) => n in 2..4).iseq() == @[2, 3, 4]
 
   test "multi":
-    check "hello".pairs |> map((idx, c) => c) == toseq "hello".toseq
+    check "hello".pairs |> map((idx, c) => c).iseq() == toseq "hello".toseq
 
 suite "custom ident :: reduce":
   test "1":

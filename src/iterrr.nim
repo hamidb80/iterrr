@@ -65,7 +65,6 @@ func replacedIteratorIdents(expr: NimNode, aliases: seq[NimNode]): NimNode =
 
 func toIterrrPack(calls: seq[NimNode]): IterrrPack =
   var hasReducer = false
-
   for i, n in calls:
     template addToCallChain(higherOrderKind): untyped =
       result.callChain.add HigherOrderCall(
@@ -86,28 +85,23 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
 
     elif i == calls.high: # reducer
       hasReducer = true
+
       result.reducer = ReducerCall(
         caller: ident caller,
+        params: n[CallArgs],
 
         idents: if n[CallIdent].kind == nnkBracketExpr:
             n[CallIdent][BracketExprParams]
           else:
-            @[],
-
-        params: n[CallArgs])
+            @[])
 
     else:
-      raise newException(ValueError, "!!!!!!")
-      # result.callChain.add HigherOrderCall(
-      #   kind: hoCustom,
-      #   name: caller,
-      #   iteratorIdentAliases: getIteratorIdents n,
-      #   param: n[CallArgs[0]])
+      result.callChain.add HigherOrderCall(
+        kind: hoCustom,
+        name: caller,
+        params: n[CallArgs])
 
-
-
-  if not hasReducer:
-    result.reducer = ReducerCall(caller: ident "iseq")
+  assert hasReducer, "must set reducer"
 
 func detectType(itrbl: NimNode, mapsParam: seq[NimNode]): NimNode =
   var target = inlineQuote default(typeof(`itrbl`))
@@ -119,7 +113,8 @@ func detectType(itrbl: NimNode, mapsParam: seq[NimNode]): NimNode =
 
 func resolveIteratorAliases(ipack: var IterrrPack) =
   for c in ipack.callChain.mitems:
-    c.param = c.param.replacedIteratorIdents(c.iteratorIdentAliases)
+    if c.kind != hoCustom:
+      c.param = c.param.replacedIteratorIdents(c.iteratorIdentAliases)
 
 proc inspect(s: seq[NimNode]): seq[NimNode] {.used.} =
   ## debugging purposes
@@ -127,6 +122,67 @@ proc inspect(s: seq[NimNode]): seq[NimNode] {.used.} =
     echo treeRepr n
 
   s
+
+
+func getNode(node: NimNode, path: seq[int]): NimNode =
+  result = node
+  for i in path:
+    result = result[i]
+
+proc replaceNode(node: NimNode, path: seq[int], by: NimNode) =
+  var cur = node
+
+  for i in path[0 ..< ^1]:
+    cur = cur[i]
+
+  cur[path[^1]] = by
+
+
+func findPathsImpl(node: NimNode, fn: proc(node: NimNode): bool,
+  path: seq[int], result: var seq[seq[int]]) =
+
+  if fn node:
+    result.add path
+
+  else:
+    for i, n in node:
+      findPathsImpl n, fn, path & @[i], result
+
+func findPaths(node: NimNode, fn: proc(node: NimNode): bool): seq[seq[int]] =
+  findPathsImpl node, fn, @[], result
+
+
+type
+  AdapterInfo = ref object
+    wrapperCode: NimNode
+    args: seq[NimNode] ## TODO
+    loopPath: seq[int]
+    yeildPaths: seq[seq[int]]
+
+var customAdapters {.compileTime.}: Table[string, AdapterInfo]
+
+## FIXME correct param & args names
+
+macro adapter*(iterDef): untyped =
+  expectKind iterDef, nnkIteratorDef
+  let args = iterdef.RoutineArguments
+  assert args.len >= 1
+
+  let
+    itrblId = args[0][IdentDefName]
+    ypaths = findPaths(iterDef[RoutineBody], (n: NimNode) => n.kind == nnkYieldStmt)
+    mainloopPaths = findPaths(iterDef[RoutineBody],
+      (n: NimNode) => n.kind == nnkForStmt and eqIdent(n[ForRange], itrblId))
+
+  assert mainloopPaths.len == 1, "there must be only one main loop"
+
+  let adptr = AdapterInfo(
+    wrapperCode: iterDef[RoutineBody],
+    loopPath: mainloopPaths[0],
+    yeildPaths: ypaths)
+
+  customAdapters[iterdef[RoutineName].strVal] = adptr
+  echo repr adptr
 
 
 proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
@@ -160,6 +216,11 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         let
           dtype = detectType itrbl:
             ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
+            # ipack.callChain.filterIt(it.kind in {hoMap, hoCustom}).mapIt:
+              # case it.kind:
+              # of hoMap: it.param
+              # of hoCustom: it.name & "AdapterType"
+              # else: err "cannot happen"
 
           reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent,
               dtype).newCall.add:
@@ -180,35 +241,39 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
       else:
         newCall(reducerFinalizerProcIdent, accIdent)
 
+  var
+    wrappers: seq[tuple[code: NimNode, args: seq[NimNode], path: seq[int]]]
+    loopBody =
+      if noAcc:
+        code.replacedIteratorIdents(ipack.reducer.params)
 
-  var loopBody =
-    if noAcc:
-      code.replacedIteratorIdents(ipack.reducer.params)
-
-    elif hasInplaceReducer:
-      if ipack.reducer.idents.len == 2:
-        case ipack.reducer.idents[1].kind:
-        of nnkIdent:
-          code.replacedIdents(ipack.reducer.idents, [accIdent, itIdent])
-        of nnkTupleConstr:
-          let
-            customIdents = ipack.reducer.idents[1].toseq
-            repls = buildBracketExprOf(ident "it", customIdents.len)
-          code.replacedIdents(ipack.reducer.idents[0] & customIdents, @[
-              accIdent] & repls)
+      elif hasInplaceReducer:
+        if ipack.reducer.idents.len == 2:
+          case ipack.reducer.idents[1].kind:
+          of nnkIdent:
+            code.replacedIdents(ipack.reducer.idents, [accIdent, itIdent])
+          of nnkTupleConstr:
+            let
+              customIdents = ipack.reducer.idents[1].toseq
+              repls = buildBracketExprOf(ident "it", customIdents.len)
+            code.replacedIdents(ipack.reducer.idents[0] & customIdents, @[
+                accIdent] & repls)
+          else:
+            raise newException(ValueError,
+                "invalid inplace reducer custom ident type") # TODO easier error
         else:
-          raise newException(ValueError,
-              "invalid inplace reducer custom ident type") # TODO easier error
-      else:
-        code
+          code
 
-    else:
-      quote:
-        if not `reducerStateUpdaterProcIdent`(`accIdent`, `itIdent`):
-          break `mainLoopIdent`
+      else:
+        quote:
+          if not `reducerStateUpdaterProcIdent`(`accIdent`, `itIdent`):
+            break `mainLoopIdent`
+
 
   for call in ipack.callChain.ritems:
-    let p = call.param
+    let p =
+      if call.kind == hoCustom: newEmptyNode()
+      else: call.param
 
     loopBody = block:
       case call.kind:
@@ -231,88 +296,40 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
             `loopBody`
 
       of hoCustom:
-        raise newException(ValueError, "????????")
+        try:
+          let adptr = customAdapters[call.name]
+          var code = copy adptr.wrapperCode
+
+          for yp in adptr.yeildPaths:
+            code.replaceNode yp:
+              let yval = code.getNode(yp)[0]
+              quote:
+                block:
+                  let `itIdent` = `yval`
+                  `loopBody`
+
+          wrappers.add (code, @[], adptr.loopPath)
+          code.getNode(adptr.loopPath)[ForBody]
+
+        except:
+          raise newException(ValueError, "not defined")
 
 
-  newBlockStmt:
-    if noAcc:
-      quote:
-        for `itIdent` in `itrbl`:
-          `loopBody`
+  result = quote:
+    block `mainLoopIdent`:
+      for `itIdent` in `itrbl`:
+        `loopBody`
 
-    else:
-      quote:
-        `accDef`
+  for w in wrappers:
+    result = block:
+      w.code.replaceNode(w.path, result)
+      w.code
 
-        block `mainLoopIdent`:
-          for `itIdent` in `itrbl`:
-            `loopBody`
-
-        `accFinalizeCall`
-
-
-func identList(args: seq[NimNode]): seq[NimNode] =
-  for a in args:
-    result.add a[IdentDefNames]
-
-func getNode(node: NimNode, path: seq[int]): NimNode =
-  result = node
-  for i in path:
-    result = result[i]
-
-proc replaceNode(node: NimNode, path: seq[int], by: NimNode) =
-  var cur = node
-
-  for i in path[0 ..< ^1]:
-    cur = cur[i]
-
-  cur[path[^1]] = by
-
-
-func findPathsImpl(node: NimNode, fn: proc(node: NimNode): bool,
-  path: seq[int], result: var seq[seq[int]]) =
-
-  if fn node:
-    result.add path
-
-  else:
-    for i, n in node:
-      findPathsImpl n, fn, path & @[i], result
-
-func findPaths(node: NimNode, fn: proc(node: NimNode): bool): seq[seq[int]] =
-  findPathsImpl node, fn, @[], result
-
-
-type
-  AdapterInfo* = object
-    wrapperCode: NimNode
-    loopPath: seq[int]
-    yeildPaths: seq[seq[int]]
-
-var customAdapters {.compileTime.}: Table[string, AdapterInfo]
-
-macro adapter*(iterDef): untyped =
-  expectKind iterDef, nnkIteratorDef
-  let args = iterdef.RoutineArguments
-  assert args.len >= 1
-
-  let
-    il = args.identList
-    itrblId = il[0]
-    ypaths = findPaths(iterDef[RoutineBody], (n: NimNode) => n.kind == nnkYieldStmt)
-    mainloopPaths = findPaths(iterDef[RoutineBody],
-      (n: NimNode) => n.kind == nnkForStmt and eqIdent(n[ForRange], itrblId))
-
-  assert mainloopPaths.len == 1, "there must be only one main loop"
-  
-  let adptr = AdapterInfo(
-    wrapperCode: iterDef[RoutineBody],
-    loopPath: mainloopPaths[0],
-    yeildPaths: ypaths)
-  
-  customAdapters[iterdef[RoutineName].strVal] = adptr
-  echo repr adptr
-
+  result = quote:
+    block:
+      `accDef`
+      `result`
+      `accFinalizeCall`
 
 # main ---------------------------------------
 
