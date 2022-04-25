@@ -13,7 +13,7 @@ type
   HigherOrderCall = object
     case kind: HigherOrderCallers
     of hoCustom:
-      name: string
+      name: NimNode
       params: seq[NimNode]
     else:
       iteratorIdentAliases: seq[NimNode]
@@ -28,13 +28,22 @@ type
     callChain: seq[HigherOrderCall]
     reducer: ReducerCall
 
+  Changer = object
+    case kind: HigherOrderCallers:
+    of hoCustom:
+      params: seq[NimNode]
+      name: NimNode
+    else:
+      expr: NimNode
+
+
 # impl -----------------------------------------
 
 func `&.`(id: NimNode, str: string): NimNode =
   case id.kind:
   of nnkIdent: ident id.strVal & str
   of nnkAccQuoted: id[0] &. str
-  else: err "what?!+"
+  else: err "what?!+" & " " & treerepr(id) & " ::"
 
 func getIteratorIdents(call: NimNode): seq[NimNode] =
   if call[CallIdent].kind == nnkBracketExpr:
@@ -100,22 +109,22 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
     else:
       result.callChain.add HigherOrderCall(
         kind: hoCustom,
-        name: caller,
+        name: ident caller,
         params: n[CallArgs])
 
   assert hasReducer, "must set reducer"
 
-func detectType(itrbl: NimNode, mapsParam: seq[NimNode]): NimNode =
+func detectType(itrbl: NimNode, mapsParam: seq[Changer]): NimNode =
   var target = inlineQuote default(typeof(`itrbl`))
 
-  for operation in mapsParam:
-    # case operation.kind:
-    # of hoMap:
-    target = replacedIdent(operation, ident "it", target)
-    # of hoCustom:
-    #   target = 
-    # else: 
-    #   err "impossible"
+  for ch in mapsParam:
+    case ch.kind:
+    of hoMap:
+      target = replacedIdent(ch.expr, ident "it", target)
+    of hoCustom:
+      target = newCall(ch.name &. "Type", target).add ch.params
+    else:
+      err "impossible"
 
   inlineQuote typeof(`target`)
 
@@ -128,7 +137,6 @@ proc inspect(s: seq[NimNode]): seq[NimNode] {.used.} =
   ## debugging purposes
   for n in s:
     echo treeRepr n
-
   s
 
 
@@ -166,6 +174,7 @@ type
     loopPath: seq[int]
     yeildPaths, argsValuePaths, uniqIdentPaths: seq[seq[int]]
 
+
 var customAdapters {.compileTime.}: Table[string, AdapterInfo]
 
 ## FIXME correct param & args names
@@ -182,7 +191,7 @@ macro adapter*(iterDef): untyped =
     body = iterDef[RoutineBody]
     argsDef = newTree nnkLetSection
 
-  for i, a in args[1..^1]:
+  for i, a in args[1..^1]: # FIXME refactor
     argsDef.add newIdentDefs(a[IdentDefName], a[IdentDefType], newNilLit())
     adptr.argsValuePaths.add @[0, i, 2]
 
@@ -201,6 +210,14 @@ macro adapter*(iterDef): untyped =
   customAdapters[iterdef[RoutineName].strVal] = adptr
   echo repr adptr
 
+
+  result = newProc(
+    iterDef[RoutineName] &. "Type",
+    @[ident"untyped"] & args,
+    iterDef.RoutineReturnType,
+    nnkTemplateDef)
+
+  debugEcho repr result
 
 proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     code: NimNode = nil): NimNode =
@@ -230,14 +247,20 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
       else:
         let
-          # dtype = detectType itrbl:
-          #   ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
-          ## TODO type checking for custom adapter
           dtype = detectType itrbl:
-            ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
+            var temp: seq[Changer]
+            for c in ipack.callChain:
+              case c.kind:
+              of hoMap:
+                temp.add Changer(kind: hoMap, expr: c.param)
+              of hoCustom:
+                temp.add Changer(kind: hoCustom, name: c.name, params: c.params)
+              else:
+                err "imp"
 
-          reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent,
-              dtype).newCall.add:
+            temp
+
+          reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent, dtype).newCall.add:
             ipack.reducer.params
 
         quote:
@@ -311,30 +334,28 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
             `loopBody`
 
       of hoCustom:
-        try:
-          let adptr = customAdapters[call.name]
-          var code = copy adptr.wrapperCode
+        let adptr = customAdapters[call.name.strval]
+        var 
+          code = copy adptr.wrapperCode
+          org = copy code
 
-          for yp in adptr.yeildPaths:
-            code.replaceNode yp:
-              let yval = code.getNode(yp)[0]
+        for up in adptr.uniqIdentPaths:
+          code.replaceNode up, code.getnode(up) &. $i
 
-              if eqIdent(yval, ident"it"):
-                loopBody
-              else:
-                quote:
-                  block:
-                    let `itIdent` = `yval`
-                    `loopBody`
+        for yp in adptr.yeildPaths:
+          code.replaceNode yp:
+            let yval = code.getNode(yp)[0]
 
-          for up in adptr.uniqIdentPaths:
-            code.replaceNode up, code.getnode(up) &. $i
+            if eqIdent(yval, ident"it"):
+              loopBody
+            else:
+              quote:
+                block:
+                  let `itIdent` = `yval`
+                  `loopBody`
 
-          wrappers.add (code, call.params, adptr)
-          code.getNode(adptr.loopPath)[ForBody]
-
-        except:
-          err "not defined"
+        wrappers.add (code, call.params, adptr)
+        code.getNode(adptr.loopPath)[ForBody]
 
 
   result = quote:
