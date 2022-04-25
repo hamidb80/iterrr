@@ -232,6 +232,42 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
         `accFinalizeCall`
 
+
+proc replaceNode(node: NimNode, path: seq[int], by: NimNode) =
+  var cur = node
+
+  for i in path[0 ..< ^1]:
+    cur = cur[i]
+
+  cur[path[^1]] = by
+
+proc getNode(node: NimNode, path: seq[int]): NimNode =
+  result = node
+  for i in path:
+    result = result[i]
+
+proc findKindPathsImpl(node: NimNode, nkind: NimNodeKind, path: seq[int],
+    result: var seq[seq[int]]) =
+  if node.kind == nkind:
+    result.add path
+
+  else:
+    for i, n in node:
+      findKindPathsImpl node, nkind, path & @[i], result
+
+proc findKindPaths(node: NimNode, kind: NimNodeKind): seq[seq[int]] =
+  findKindPathsImpl node, kind, @[], result
+
+proc replaceYieldsWrapperBody(node: NimNode, yieldPaths: seq[seq[int]],
+    accFnIdent: NimNode) =
+  for yp in yieldPaths:
+    node.replaceNode yp, newCall(accFnIdent, getNode(node, yp & @[0]))
+
+
+macro adapter*(body): untyped =
+  expectKind body, nnkIteratorDef
+
+
 # main ---------------------------------------
 
 macro `|>`*(itrbl, body): untyped =
@@ -258,6 +294,7 @@ macro `!>`*(itrbl, body, code): untyped =
   echo "#]"
   footer
 
+
 template iterrr*(itrbl, body, code): untyped =
   itrbl |> body:
     code
@@ -280,4 +317,3 @@ macro iterrr*(itrbl, body): untyped =
 
   else:
     raise newException(ValueError, "invalid type")
-
