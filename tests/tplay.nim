@@ -3,7 +3,7 @@ import ../src/iterrr
 
 # impl -----------------------------------
 
-iterator cycle(itrbl: untyped; `limit`: int): itrbl {.adapter.} =
+iterator cycle(itrbl: T; `limit`: int): itrbl {.adapter.} =
   block cycleLoop:
     var `c` = 0
     while true:
@@ -13,26 +13,20 @@ iterator cycle(itrbl: untyped; `limit`: int): itrbl {.adapter.} =
         if `c` == `limit`:
           break cycleLoop
 
-      if `c` == `limit`:
-        break cycleLoop
-
-iterator flatten(itrbl: openArray[int]): itrbl[0] {.adapter.} =
+iterator flatten(itrbl: T): itrbl[0] {.adapter.} =
   for it in itrbl:
     for it in it:
       yield it
 
 
-iterator group(itrbl: untyped, `every`: int): @[itrbl] {.adapter.} =
-  var `gacc` = newseq[typeof itrbl]()
-  for it in itrbl:
+iterator group(loop: T; `every`: int): seq[T] {.adapter.} =
+  var `gacc` = newseq[T]()
+  for it in loop:
     `gacc`.add it
     if `gacc`.len == `every`:
       yield `gacc`
       `gacc` = @[]
   
-  if `gacc`.len != `every`:
-    yield `gacc`
-
 
 # test -----------------------------------
 
@@ -43,7 +37,8 @@ let matrix = [
 ]
 
 
-# echo matrix.items !> cycle(5).flatten().toseq()
+echo matrix.items !> flatten().cycle(10).group(2).toseq()
+echo matrix.items !> flatten().cycle(10).toseq()
 # echo matrix.items !> cycle(5).toseq()
 # echo matrix.items !> flatten().toseq()
-echo matrix.items !> group(2).toseq()
+# echo matrix.items !> group(2).toseq()

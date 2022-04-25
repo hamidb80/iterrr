@@ -6,6 +6,8 @@ export reducers, iterators
 
 # def ------------------------------------------
 
+## FIXME correct param & args names
+
 type
   HigherOrderCallers = enum
     hoMap, hoFilter, hoBreakIf, hoCustom
@@ -35,6 +37,11 @@ type
       name: NimNode
     else:
       expr: NimNode
+
+  AdapterInfo = ref object
+    wrapperCode: NimNode
+    loopPath: seq[int]
+    iterTypePaths, yeildPaths, argsValuePaths, uniqIdentPaths: seq[seq[int]]
 
 
 # impl -----------------------------------------
@@ -114,7 +121,7 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
 
   assert hasReducer, "must set reducer"
 
-func detectType(itrbl: NimNode, mapsParam: seq[Changer]): NimNode =
+func detectTypeImpl(itrbl: NimNode, mapsParam: seq[Changer]): NimNode =
   var target = inlineQuote default(typeof(`itrbl`))
 
   for ch in mapsParam:
@@ -127,6 +134,20 @@ func detectType(itrbl: NimNode, mapsParam: seq[Changer]): NimNode =
       err "impossible"
 
   inlineQuote typeof(`target`)
+
+func detectType(itrbl: NimNode, callChain: seq[HigherOrderCall]): NimNode =
+  detectTypeImpl itrbl:
+    var temp: seq[Changer]
+    for c in callChain:
+      case c.kind:
+      of hoMap:
+        temp.add Changer(kind: hoMap, expr: c.param)
+      of hoCustom:
+        temp.add Changer(kind: hoCustom, name: c.name, params: c.params)
+      else: err "imp"
+
+    temp
+
 
 func resolveIteratorAliases(ipack: var IterrrPack) =
   for c in ipack.callChain.mitems:
@@ -168,23 +189,14 @@ func findPaths(node: NimNode, fn: proc(node: NimNode): bool): seq[seq[int]] =
   findPathsImpl node, fn, @[], result
 
 
-type
-  AdapterInfo = ref object
-    wrapperCode: NimNode
-    loopPath: seq[int]
-    yeildPaths, argsValuePaths, uniqIdentPaths: seq[seq[int]]
-
-
 var customAdapters {.compileTime.}: Table[string, AdapterInfo]
-
-## FIXME correct param & args names
 
 macro adapter*(iterDef): untyped =
   expectKind iterDef, nnkIteratorDef
 
   let
     args = iterdef.RoutineArguments
-    itrblId = args[0][IdentDefName]
+    itrblId = args[0]
 
   var
     adptr = AdapterInfo()
@@ -198,24 +210,28 @@ macro adapter*(iterDef): untyped =
   body.insert 0, argsDef
 
   adptr.wrapperCode = body
-  adptr.uniqIdentPaths = findPaths(body, (n: NimNode) => n.kind == nnkAccQuoted)
-  adptr.yeildPaths = findPaths(body, (n: NimNode) => n.kind == nnkYieldStmt)
+  adptr.uniqIdentPaths = findPaths(body, (n) => n.kind == nnkAccQuoted)
+  adptr.yeildPaths = findPaths(body, (n) => n.kind == nnkYieldStmt)
+  adptr.iterTypePaths = findPaths(body, (n) => n.eqIdent itrblId[IdentDefType])
   adptr.loopPath = block:
     let temp = findPaths(body,
-      (n: NimNode) => n.kind == nnkForStmt and eqIdent(n[ForRange], itrblId))
+      (n) => n.kind == nnkForStmt and eqIdent(n[ForRange], itrblId[IdentDefName]))
 
     assert temp.len == 1, "there must be only one main loop"
     temp[0]
 
+
   customAdapters[iterdef[RoutineName].strVal] = adptr
   echo repr adptr
-
 
   result = newProc(
     iterDef[RoutineName] &. "Type",
     @[ident"untyped"] & args,
     iterDef.RoutineReturnType,
     nnkTemplateDef)
+
+  result[RoutineGenericParams] = newTree(nnkGenericParams, 
+    newIdentDefs(itrblId[IdentDefType], newEmptyNode()))
 
   debugEcho repr result
 
@@ -247,20 +263,9 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
       else:
         let
-          dtype = detectType itrbl:
-            var temp: seq[Changer]
-            for c in ipack.callChain:
-              case c.kind:
-              of hoMap:
-                temp.add Changer(kind: hoMap, expr: c.param)
-              of hoCustom:
-                temp.add Changer(kind: hoCustom, name: c.name, params: c.params)
-              else:
-                err "imp"
-
-            temp
-
-          reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent, dtype).newCall.add:
+          dtype = detectType(itrbl, ipack.callChain)
+          reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent,
+              dtype).newCall.add:
             ipack.reducer.params
 
         quote:
@@ -275,13 +280,13 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
             ipack.reducer.params[1]
         else:
           accIdent
-      elif noAcc: 
+      elif noAcc:
         newEmptyNode()
-      else: 
+      else:
         newCall(reducerFinalizerProcIdent, accIdent)
 
   var
-    wrappers: seq[tuple[code: NimNode, params: seq[NimNode], info: AdapterInfo]]
+    wrappers: seq[tuple[code: NimNode, dtype: NimNode, params: seq[NimNode], info: AdapterInfo]]
     loopBody =
       if noAcc:
         code.replacedIteratorIdents(ipack.reducer.params)
@@ -335,9 +340,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
       of hoCustom:
         let adptr = customAdapters[call.name.strval]
-        var 
-          code = copy adptr.wrapperCode
-          org = copy code
+        var code = copy adptr.wrapperCode
 
         for up in adptr.uniqIdentPaths:
           code.replaceNode up, code.getnode(up) &. $i
@@ -354,7 +357,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
                   let `itIdent` = `yval`
                   `loopBody`
 
-        wrappers.add (code, call.params, adptr)
+        wrappers.add (code, itrbl.detectType(ipack.callChain[0..i-1]), call.params, adptr)
         code.getNode(adptr.loopPath)[ForBody]
 
 
@@ -362,12 +365,17 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     for `itIdent` in `itrbl`:
       `loopBody`
 
-  for w in wrappers:
+  for w in wrappers.ritems:
     result = block:
       w.code.replaceNode w.info.loopPath, result
 
+      for p in w.info.iterTypePaths:
+        w.code.replaceNode p, w.dtype
+
       for i, p in w.params:
         w.code.replaceNode w.info.argsValuePaths[i], p
+
+      debugEcho repr code
 
       w.code
 
