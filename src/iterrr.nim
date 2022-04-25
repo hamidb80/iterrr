@@ -305,10 +305,15 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
           for yp in adptr.yeildPaths:
             code.replaceNode yp:
               let yval = code.getNode(yp)[0]
-              quote:
-                block:
-                  let `itIdent` = `yval`
-                  `loopBody`
+
+              if eqIdent(yval, ident"it"):
+                loopBody     
+              else:
+                quote:
+                  block:
+                    let `itIdent` = `yval`
+                    `loopBody`
+
 
           wrappers.add (code, adptr.args, call.params, adptr.loopPath)
           code.getNode(adptr.loopPath)[ForBody]
@@ -318,15 +323,14 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
 
   result = quote:
-    block `mainLoopIdent`:
-      for `itIdent` in `itrbl`:
-        `loopBody`
+    for `itIdent` in `itrbl`:
+      `loopBody`
 
   for w in wrappers:
     result = block:
       w.code.replaceNode(w.path, result)
       
-      var argsDef = newTree(nnkVarSection)
+      var argsDef = newTree(nnkLetSection)
       for i, a in w.argsDef:
         argsDef.add newIdentDefs(a[IdentDefName], a[IdentDefType], w.params[i])
 
@@ -335,7 +339,8 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
   result = quote:
     block:
       `accDef`
-      `result`
+      block `mainLoopIdent`:
+        `result`
       `accFinalizeCall`
 
 # main ---------------------------------------
