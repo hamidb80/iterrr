@@ -144,7 +144,7 @@ func detectType(itrbl: NimNode, callChain: seq[HigherOrderCall]): NimNode =
         temp.add Changer(kind: hoMap, expr: c.param)
       of hoCustom:
         temp.add Changer(kind: hoCustom, name: c.name, params: c.params)
-      else: err "imp"
+      else: discard
 
     temp
 

@@ -4,7 +4,7 @@ import iterrr
 
 suite "adapters":
   test "map + filter":
-    check ((1..5) |> map(it * it).filter(it > 10).toSeq()) == @[16, 25]
+    check (1..5) |> map(it * it).filter(it > 10).toSeq() == @[16, 25]
 
   test "breakif":
     check (1..5) |> map(it ^ 2).breakif(it == 4).toSeq() == @[1]
