@@ -1,4 +1,4 @@
-import std/[strutils, sequtils]
+import std/[strutils, sequtils, tables, sugar]
 import std/macros, macroplus
 import ./iterrr/[reducers, helper, iterators]
 
@@ -8,12 +8,16 @@ export reducers, iterators
 
 type
   HigherOrderCallers = enum
-    hoMap, hoFilter, hoBreackIf
+    hoMap, hoFilter, hoBreakIf, hoCustom
 
   HigherOrderCall = object
-    kind: HigherOrderCallers
-    iteratorIdentAliases: seq[NimNode]
-    param: NimNode
+    case kind: HigherOrderCallers
+    of hoCustom:
+      name: string
+      params: seq[NimNode]
+    else:
+      iteratorIdentAliases: seq[NimNode]
+      param: NimNode
 
   ReducerCall = object
     caller: NimNode
@@ -26,7 +30,11 @@ type
 
 # impl -----------------------------------------
 
-proc getIteratorIdents(call: NimNode): seq[NimNode] =
+func `&.`(id: NimNode, str: string): NimNode =
+  expectKind id, nnkIdent
+  ident id.strVal & str
+
+func getIteratorIdents(call: NimNode): seq[NimNode] =
   if call[CallIdent].kind == nnkBracketExpr:
     call[CallIdent][BracketExprParams]
 
@@ -37,15 +45,14 @@ proc getIteratorIdents(call: NimNode): seq[NimNode] =
     case args.kind:
     of nnkIdent: @[args]
     of nnkPar: @[args[0]]
-    of nnkTupleConstr:
-      args.children.toseq
+    of nnkTupleConstr: args.children.toseq
     else:
       raise newException(ValueError, "invalid custom ident style")
 
   else:
     @[]
 
-proc buildBracketExprOf(id: NimNode, len: int): seq[NimNode] =
+func buildBracketExprOf(id: NimNode, len: int): seq[NimNode] =
   for i in (0..<len):
     result.add newTree(nnkBracketExpr, id, newIntLitNode i)
 
@@ -56,7 +63,7 @@ func replacedIteratorIdents(expr: NimNode, aliases: seq[NimNode]): NimNode =
   else:
     expr.replacedIdents(aliases, buildBracketExprOf(ident"it", aliases.len))
 
-proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
+func toIterrrPack(calls: seq[NimNode]): IterrrPack =
   var hasReducer = false
 
   for i, n in calls:
@@ -75,7 +82,7 @@ proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
     case caller:
     of "map": addToCallChain hoMap
     of "filter": addToCallChain hoFilter
-    of "breakif": addToCallChain hoBreackIf
+    of "breakif": addToCallChain hoBreakIf
 
     elif i == calls.high: # reducer
       hasReducer = true
@@ -90,12 +97,19 @@ proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
         params: n[CallArgs])
 
     else:
-      err "finalizer can only be last call: " & caller
+      raise newException(ValueError, "!!!!!!")
+      # result.callChain.add HigherOrderCall(
+      #   kind: hoCustom,
+      #   name: caller,
+      #   iteratorIdentAliases: getIteratorIdents n,
+      #   param: n[CallArgs[0]])
+
+
 
   if not hasReducer:
     result.reducer = ReducerCall(caller: ident "iseq")
 
-proc detectType(itrbl: NimNode, mapsParam: seq[NimNode]): NimNode =
+func detectType(itrbl: NimNode, mapsParam: seq[NimNode]): NimNode =
   var target = inlineQuote default(typeof(`itrbl`))
 
   for operation in mapsParam:
@@ -103,7 +117,7 @@ proc detectType(itrbl: NimNode, mapsParam: seq[NimNode]): NimNode =
 
   inlineQuote typeof(`target`)
 
-proc resolveIteratorAliases(ipack: var IterrrPack) =
+func resolveIteratorAliases(ipack: var IterrrPack) =
   for c in ipack.callChain.mitems:
     c.param = c.param.replacedIteratorIdents(c.iteratorIdentAliases)
 
@@ -114,6 +128,7 @@ proc inspect(s: seq[NimNode]): seq[NimNode] {.used.} =
 
   s
 
+
 proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     code: NimNode = nil): NimNode =
 
@@ -123,15 +138,15 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
   let
     hasCustomCode = code != nil
-    noAcc = hasCustomCode and ipack.reducer.caller.strval == "each"
-    hasInplaceReducer = ipack.reducer.caller.strVal == "reduce"
+    noAcc = hasCustomCode and eqident(ipack.reducer.caller, "each")
+    hasInplaceReducer = eqident(ipack.reducer.caller, "reduce")
 
     accIdent = ident "acc"
     itIdent = ident "it"
     mainLoopIdent = ident "mainLoop"
     reducerStateUpdaterProcIdent = ipack.reducer.caller
-    reducerFinalizerProcIdent = ident ipack.reducer.caller.strVal & "Finalizer"
-    reducerInitProcIdent = ident ipack.reducer.caller.strval & "Init"
+    reducerFinalizerProcIdent = ipack.reducer.caller &. "Finalizer"
+    reducerInitProcIdent = ipack.reducer.caller &. "Init"
 
     accDef =
       if noAcc: newEmptyNode()
@@ -208,12 +223,15 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
           if `p`:
             `loopBody`
 
-      of hoBreackIf:
+      of hoBreakIf:
         quote:
           if `p`:
             break `mainLoopIdent`
           else:
             `loopBody`
+
+      of hoCustom:
+        raise newException(ValueError, "????????")
 
 
   newBlockStmt:
@@ -233,6 +251,15 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         `accFinalizeCall`
 
 
+func identList(args: seq[NimNode]): seq[NimNode] =
+  for a in args:
+    result.add a[IdentDefNames]
+
+func getNode(node: NimNode, path: seq[int]): NimNode =
+  result = node
+  for i in path:
+    result = result[i]
+
 proc replaceNode(node: NimNode, path: seq[int], by: NimNode) =
   var cur = node
 
@@ -241,31 +268,50 @@ proc replaceNode(node: NimNode, path: seq[int], by: NimNode) =
 
   cur[path[^1]] = by
 
-proc getNode(node: NimNode, path: seq[int]): NimNode =
-  result = node
-  for i in path:
-    result = result[i]
 
-proc findKindPathsImpl(node: NimNode, nkind: NimNodeKind, path: seq[int],
-    result: var seq[seq[int]]) =
-  if node.kind == nkind:
+func findPathsImpl(node: NimNode, fn: proc(node: NimNode): bool,
+  path: seq[int], result: var seq[seq[int]]) =
+
+  if fn node:
     result.add path
 
   else:
     for i, n in node:
-      findKindPathsImpl node, nkind, path & @[i], result
+      findPathsImpl n, fn, path & @[i], result
 
-proc findKindPaths(node: NimNode, kind: NimNodeKind): seq[seq[int]] =
-  findKindPathsImpl node, kind, @[], result
-
-proc replaceYieldsWrapperBody(node: NimNode, yieldPaths: seq[seq[int]],
-    accFnIdent: NimNode) =
-  for yp in yieldPaths:
-    node.replaceNode yp, newCall(accFnIdent, getNode(node, yp & @[0]))
+func findPaths(node: NimNode, fn: proc(node: NimNode): bool): seq[seq[int]] =
+  findPathsImpl node, fn, @[], result
 
 
-macro adapter*(body): untyped =
-  expectKind body, nnkIteratorDef
+type
+  AdapterInfo* = object
+    wrapperCode: NimNode
+    loopPath: seq[int]
+    yeildPaths: seq[seq[int]]
+
+var customAdapters {.compileTime.}: Table[string, AdapterInfo]
+
+macro adapter*(iterDef): untyped =
+  expectKind iterDef, nnkIteratorDef
+  let args = iterdef.RoutineArguments
+  assert args.len >= 1
+
+  let
+    il = args.identList
+    itrblId = il[0]
+    ypaths = findPaths(iterDef[RoutineBody], (n: NimNode) => n.kind == nnkYieldStmt)
+    mainloopPaths = findPaths(iterDef[RoutineBody],
+      (n: NimNode) => n.kind == nnkForStmt and eqIdent(n[ForRange], itrblId))
+
+  assert mainloopPaths.len == 1, "there must be only one main loop"
+  
+  let adptr = AdapterInfo(
+    wrapperCode: iterDef[RoutineBody],
+    loopPath: mainloopPaths[0],
+    yeildPaths: ypaths)
+  
+  customAdapters[iterdef[RoutineName].strVal] = adptr
+  echo repr adptr
 
 
 # main ---------------------------------------
