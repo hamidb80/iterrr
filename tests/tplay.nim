@@ -1,35 +1,6 @@
 import std/[macros]
 import ../src/iterrr
 
-# impl -----------------------------------
-
-iterator cycle(itrbl: T; `limit`: int): T {.adapter.} =
-  block cycleLoop:
-    var `c` = 0
-    while true:
-      for it in itrbl:
-        yield it
-        inc `c`
-        if `c` == `limit`:
-          break cycleLoop
-
-iterator flatten(itrbl: T): typeof itrbl[0] {.adapter.} =
-  for it in itrbl:
-    for it in it:
-      yield it
-
-iterator group(loop: T; `every`: int, `inComplete`: bool = false): seq[T] {.adapter.} =
-  var `gacc` = newSeqOfCap[T](`every`)
-  for it in loop:
-    `gacc`.add it
-    if `gacc`.len == `every`:
-      yield `gacc`
-      setLen `gacc`, 0
-  
-  if (`gacc`.len != 0) and `inComplete`:
-    yield `gacc`
-  
-
 # test -----------------------------------
 
 let matrix = [

@@ -18,6 +18,30 @@ func last*[T](s: seq[T]): T {.inline.} =
 
 # meta programming stuff ------------------
 
+func `&.`*(id: NimNode, str: string): NimNode =
+  ## concatinates Nim's ident with custom string
+  case id.kind:
+  of nnkIdent: ident id.strVal & str
+  of nnkAccQuoted: id[0] &. str
+  else: err "exptected nnkIdent or nnkAccQuoted but got " & $id.kind
+
+func getName*(node: NimNode): string =
+  ## extracts the name for ident and exported ident
+  ## `id` => "id"
+  ## `id`* => "id
+  
+  case node.kind:
+  of nnkIdent:
+    node.strVal
+
+  of nnkPostfix:
+    assert node[0].strval == "*"
+    getName node[1]
+
+  else:
+    err "invalid ident. got: " & $node.kind
+
+
 proc replacedIdents*(root: NimNode, targets, bys: openArray[NimNode]): NimNode =
   if root.kind == nnkIdent:
     for i, target in targets:

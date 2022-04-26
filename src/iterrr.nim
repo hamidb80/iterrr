@@ -1,8 +1,8 @@
-import std/[strutils, sequtils, tables, sugar]
+import std/[strutils, sequtils, tables]
 import std/macros, macroplus
-import ./iterrr/[reducers, helper, iterators]
+import ./iterrr/[reducers, helper, iterators, adapters]
 
-export reducers, iterators
+export reducers, iterators, adapters
 
 # FIXME correct param & args names
 # TODO add debugging for adapter and debug flag
@@ -39,19 +39,7 @@ type
     else:
       expr: NimNode
 
-  AdapterInfo = ref object
-    wrapperCode: NimNode
-    loopPath: NodePath
-    iterTypePaths, yeildPaths, argsValuePaths: seq[NodePath]
-
 # impl -----------------------------------------
-
-func `&.`(id: NimNode, str: string): NimNode =
-  ## concatinates Nim's ident with custom string
-  case id.kind:
-  of nnkIdent: ident id.strVal & str
-  of nnkAccQuoted: id[0] &. str
-  else: err "exptected nnkIdent or nnkAccQuoted but got " & $id.kind
 
 func getIteratorIdents(call: NimNode): seq[NimNode] =
   ## extracts custom iterator param names:
@@ -170,62 +158,12 @@ func resolveIteratorAliases(ipack: var IterrrPack) =
       c.expr = c.expr.replacedIteratorIdents(c.iteratorIdentAliases)
 
 proc appendAccs(node: NimNode, by: string) =
-  ## appends `by` to every nnkAccQuote node
+  ## appends `by` to every nnkAccQuote node recursively
   for i, n in node:
     if n.kind == nnkAccQuoted:
       node[i] = n &. by
     else:
       appendAccs n, by
-
-var customAdapters {.compileTime.}: Table[string, AdapterInfo]
-
-macro adapter*(iterDef): untyped =
-  expectKind iterDef, nnkIteratorDef
-  let
-    args = iterdef.RoutineArguments
-    itrblId = args[0]
-  var
-    argsValuePathsAcc: seq[NodePath]
-    body = iterDef[RoutineBody]
-    argsDef = newTree nnkLetSection
-
-  block resolveArgs:
-    var c = 0 # count
-    for i in 1..args.high:
-      let idef = args[i]
-      for t in 0 .. idef.len-3: # for multi args like (a,b: int)
-        argsDef.add newIdentDefs(idef[t], idef[IdentDefType], idef[IdentDefDefaultVal])
-        argsValuePathsAcc.add @[0, c, 2]
-        inc c
-
-    body.insert 0, argsDef
-
-  let adptr = AdapterInfo(
-    argsValuePaths: argsValuePathsAcc,
-    wrapperCode: body,
-    yeildPaths: findPaths(body, (n) => n.kind == nnkYieldStmt),
-    iterTypePaths: findPaths(body, (n) => n.eqIdent itrblId[IdentDefType]),
-    loopPath: (
-      let temp = findPaths(body,
-        (n) => n.kind == nnkForStmt and eqIdent(n[ForRange], itrblId[IdentDefName]))
-
-      assert temp.len == 1, "there must be only one main loop"
-      temp[0]
-    ))
-
-  customAdapters[iterdef[RoutineName].strVal] = adptr
-  # echo repr adptr
-
-  result = newProc(
-    iterDef[RoutineName] &. "Type",
-    @[ident"untyped"] & args,
-    iterDef.RoutineReturnType,
-    nnkTemplateDef)
-
-  result[RoutineGenericParams] = newTree(nnkGenericParams,
-    newIdentDefs(itrblId[IdentDefType], newEmptyNode()))
-
-  # debugEcho repr result
 
 proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     code: NimNode = nil): NimNode =
