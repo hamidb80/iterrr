@@ -271,6 +271,9 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 improve existing code for now.
 
 ## Change Logs
+### `0.4.1` -> `0.4.2`:
+- optimization
+
 ### `0.3.8` -> `0.4.1`:
 - remove `ifor`
 - add custom adapter

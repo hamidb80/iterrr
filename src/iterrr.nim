@@ -157,13 +157,13 @@ func resolveIteratorAliases(ipack: var IterrrPack) =
     if c.kind != hoCustom:
       c.expr = c.expr.replacedIteratorIdents(c.iteratorIdentAliases)
 
-proc appendAccs(node: NimNode, by: string) =
+proc resolveUniqIdents(node: NimNode, by: string) =
   ## appends `by` to every nnkAccQuote node recursively
   for i, n in node:
     if n.kind == nnkAccQuoted:
       node[i] = n &. by
     else:
-      appendAccs n, by
+      resolveUniqIdents n, by
 
 proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     code: NimNode = nil): NimNode =
@@ -277,7 +277,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         let adptr = customAdapters[call.name.strval]
         var code = copy adptr.wrapperCode
 
-        code.appendAccs $i
+        code.resolveUniqIdents $i
 
         for yp in adptr.yeildPaths:
           code.replaceNode yp:
@@ -292,7 +292,13 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
                   `loopBody`
 
         wrappers.add:
-          (code, detectType(itrbl, ipack.callChain[0..i-1]), call.params, adptr)
+          let dtype = # speed optimzation for adptr who don't use generic type. like `cycle` and `flatten`
+            if adptr.iterTypePaths.len == 0:
+              newEmptyNode()
+            else:
+              detectType(itrbl, ipack.callChain[0..i-1])
+
+          (code, dtype, call.params, adptr)
 
         code.getNode(adptr.loopPath)[ForBody]
 
