@@ -1,13 +1,12 @@
 import std/[macros, sequtils]
 import macroplus
 
+type NodePath* = seq[int]
+
 # conventions -----------------------
 
 template err*(msg): untyped =
   raise newException(ValueError, msg)
-
-# template impossible*: untyped =
-#   err "impossilbe event"
 
 # meta programming ------------------
 
@@ -75,3 +74,35 @@ proc flattenNestedDotExprCall*(n: NimNode): seq[NimNode] =
   ##   Ident "imax"
 
   flattenNestedDotExprCallImpl n, result
+
+
+func getNode*(node: NimNode, path: NodePath): NimNode =
+  result = node
+  for i in path:
+    result = result[i]
+
+proc replaceNode*(node: NimNode, path: NodePath, by: NimNode) =
+  var cur = node
+
+  for i in path[0 ..< ^1]:
+    cur = cur[i]
+
+  cur[path[^1]] = by
+
+
+func findPathsImpl(node: NimNode, fn: proc(node: NimNode): bool,
+  path: NodePath, result: var seq[NodePath]) =
+
+  if fn node:
+    result.add path
+
+  else:
+    for i, n in node:
+      findPathsImpl n, fn, path & @[i], result
+
+func findPaths*(node: NimNode, fn: proc(node: NimNode): bool): seq[NodePath] =
+  findPathsImpl node, fn, @[], result
+
+
+func last*[T](s: seq[T]): T =  
+  s[s.high]
