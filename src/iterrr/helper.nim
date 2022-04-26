@@ -1,15 +1,46 @@
 import std/[macros, sequtils]
 import macroplus
 
-# conventions -----------------------
+type NodePath* = seq[int]
+
+# conventions -----------------------------
 
 template err*(msg): untyped =
   raise newException(ValueError, msg)
 
-# template impossible*: untyped =
-#   err "impossilbe event"
+template impossible*: untyped =
+  err "imposible"
 
-# meta programming ------------------
+# common utilities ------------------------
+
+func last*[T](s: seq[T]): T {.inline.} =
+  s[s.high]
+
+# meta programming stuff ------------------
+
+func `&.`*(id: NimNode, str: string): NimNode =
+  ## concatinates Nim's ident with custom string
+  case id.kind:
+  of nnkIdent: ident id.strVal & str
+  of nnkAccQuoted: id[0] &. str
+  else: err "exptected nnkIdent or nnkAccQuoted but got " & $id.kind
+
+func getName*(node: NimNode): string =
+  ## extracts the name for ident and exported ident
+  ## `id` => "id"
+  ## `id`* => "id
+  
+  case node.kind:
+  of nnkIdent:
+    node.strVal
+
+  of nnkPostfix:
+    assert node[0].strval == "*"
+    getName node[1]
+
+  else:
+    err "invalid ident. got: " & $node.kind
+
 
 proc replacedIdents*(root: NimNode, targets, bys: openArray[NimNode]): NimNode =
   if root.kind == nnkIdent:
@@ -23,7 +54,7 @@ proc replacedIdents*(root: NimNode, targets, bys: openArray[NimNode]): NimNode =
     copyNimNode(root).add:
       root.mapIt replacedIdents(it, targets, bys)
 
-proc replacedIdent*(root: NimNode, target, by: NimNode): NimNode =
+proc replacedIdent*(root: NimNode, target, by: NimNode): NimNode {.inline.} =
   replacedIdents(root, [target], [by])
 
 proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
@@ -58,7 +89,7 @@ proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
   else:
     err "invalid caller"
 
-proc flattenNestedDotExprCall*(n: NimNode): seq[NimNode] =
+proc flattenNestedDotExprCall*(n: NimNode): seq[NimNode] {.inline.} =
   ## imap[T](1).ifilter(2).imax()
   ##
   ## converts to >>>
@@ -75,3 +106,35 @@ proc flattenNestedDotExprCall*(n: NimNode): seq[NimNode] =
   ##   Ident "imax"
 
   flattenNestedDotExprCallImpl n, result
+
+
+func getNode*(node: NimNode, path: NodePath): NimNode =
+  result = node
+  for i in path:
+    result = result[i]
+
+proc replaceNode*(node: NimNode, path: NodePath, by: NimNode) =
+  var cur = node
+
+  for i in path[0 ..< ^1]:
+    cur = cur[i]
+
+  cur[path[^1]] = by
+
+
+func findPathsImpl(node: NimNode,
+  fn: proc(node: NimNode): bool,
+  path: NodePath,
+  result: var seq[NodePath]) =
+
+  if fn node:
+    result.add path
+
+  else:
+    for i, n in node:
+      findPathsImpl n, fn, path & @[i], result
+
+func findPaths*(node: NimNode,
+  fn: proc(node: NimNode): bool): seq[NodePath] {.inline.} =
+
+  findPathsImpl node, fn, @[], result

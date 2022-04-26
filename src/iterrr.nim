@@ -1,19 +1,26 @@
-import std/[strutils, sequtils]
+import std/[strutils, sequtils, tables]
 import std/macros, macroplus
-import ./iterrr/[reducers, helper, iterators]
+import ./iterrr/[reducers, helper, iterators, adapters]
 
-export reducers, iterators
+export reducers, iterators, adapters
 
-# def ------------------------------------------
+# FIXME correct param & args names
+# TODO add debugging for adapter and debug flag
+
+# type def ------------------------------------------
 
 type
   HigherOrderCallers = enum
-    hoMap, hoFilter, hoBreackIf
+    hoMap, hoFilter, hoBreakIf, hoDo, hoCustom
 
   HigherOrderCall = object
-    kind: HigherOrderCallers
-    iteratorIdentAliases: seq[NimNode]
-    param: NimNode
+    case kind: HigherOrderCallers
+    of hoCustom:
+      name: NimNode
+      params: seq[NimNode]
+    else:
+      iteratorIdentAliases: seq[NimNode]
+      expr: NimNode
 
   ReducerCall = object
     caller: NimNode
@@ -24,9 +31,25 @@ type
     callChain: seq[HigherOrderCall]
     reducer: ReducerCall
 
+  TypeTransformer = object
+    case kind: HigherOrderCallers:
+    of hoCustom:
+      params: seq[NimNode]
+      name: NimNode
+    else:
+      expr: NimNode
+
 # impl -----------------------------------------
 
-proc getIteratorIdents(call: NimNode): seq[NimNode] =
+func getIteratorIdents(call: NimNode): seq[NimNode] =
+  ## extracts custom iterator param names:
+  ## map(...) => @[]
+  ## map(x => ...) => @[x]
+  ## map((x) => ...) => @[x]
+  ## map((x, y) => ...) => @[x, y]
+  ## map[x](...) => @[x]err
+  ## map[x, y](...) => @[x, y]
+
   if call[CallIdent].kind == nnkBracketExpr:
     call[CallIdent][BracketExprParams]
 
@@ -37,16 +60,16 @@ proc getIteratorIdents(call: NimNode): seq[NimNode] =
     case args.kind:
     of nnkIdent: @[args]
     of nnkPar: @[args[0]]
-    of nnkTupleConstr:
-      args.children.toseq
+    of nnkTupleConstr: args.children.toseq
     else:
-      raise newException(ValueError, "invalid custom ident style")
+      err "invalid custom ident style. got: " & $args.kind
 
   else:
     @[]
 
-proc buildBracketExprOf(id: NimNode, len: int): seq[NimNode] =
-  for i in (0..<len):
+func genBracketExprOf(id: NimNode, len: int): seq[NimNode] =
+  ## (`it`, 10) => [`it`[0[, `it`[1], `it`[2], ...]
+  for i in 0 ..< len:
     result.add newTree(nnkBracketExpr, id, newIntLitNode i)
 
 func replacedIteratorIdents(expr: NimNode, aliases: seq[NimNode]): NimNode =
@@ -54,17 +77,16 @@ func replacedIteratorIdents(expr: NimNode, aliases: seq[NimNode]): NimNode =
   of 0: expr
   of 1: expr.replacedIdent(aliases[0], ident "it")
   else:
-    expr.replacedIdents(aliases, buildBracketExprOf(ident"it", aliases.len))
+    expr.replacedIdents(aliases, genBracketExprOf(ident"it", aliases.len))
 
-proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
+func toIterrrPack(calls: seq[NimNode]): IterrrPack =
   var hasReducer = false
-
   for i, n in calls:
     template addToCallChain(higherOrderKind): untyped =
       result.callChain.add HigherOrderCall(
         kind: higherOrderKind,
         iteratorIdentAliases: getIteratorIdents n,
-        param: n[CallArgs[0]])
+        expr: n[CallArgs[0]])
 
     let caller = normalize:
       if n[CallIdent].kind == nnkBracketExpr:
@@ -74,45 +96,74 @@ proc toIterrrPack(calls: seq[NimNode]): IterrrPack =
 
     case caller:
     of "map": addToCallChain hoMap
+    of "do": addToCallChain hoDo
     of "filter": addToCallChain hoFilter
-    of "breakif": addToCallChain hoBreackIf
+    of "breakif": addToCallChain hoBreakIf
 
     elif i == calls.high: # reducer
       hasReducer = true
+
       result.reducer = ReducerCall(
         caller: ident caller,
+        params: n[CallArgs],
 
         idents: if n[CallIdent].kind == nnkBracketExpr:
             n[CallIdent][BracketExprParams]
           else:
-            @[],
-
-        params: n[CallArgs])
+            @[])
 
     else:
-      err "finalizer can only be last call: " & caller
+      result.callChain.add HigherOrderCall(
+        kind: hoCustom,
+        name: ident caller,
+        params: n[CallArgs])
 
-  if not hasReducer:
-    result.reducer = ReducerCall(caller: ident "iseq")
+  assert hasReducer, "must set reducer"
 
-proc detectType(itrbl: NimNode, mapsParam: seq[NimNode]): NimNode =
-  var target = inlineQuote default(typeof(`itrbl`))
+func detectTypeImpl(itrbl: NimNode, ttrfs: seq[TypeTransformer]): NimNode =
+  var cursor = inlineQuote default(typeof(`itrbl`))
 
-  for operation in mapsParam:
-    target = replacedIdent(operation, ident "it", target)
+  for t in ttrfs:
+    cursor =
+      case t.kind:
+      of hoMap:
+        replacedIdent(t.expr, ident "it", cursor)
 
-  inlineQuote typeof(`target`)
+      of hoCustom:
+        newCall ident"default":
+          newCall(t.name &. "Type", cursor).add t.params
 
-proc resolveIteratorAliases(ipack: var IterrrPack) =
+      else: impossible
+
+  inlineQuote typeof(`cursor`)
+
+func detectType(itrbl: NimNode, callChain: seq[HigherOrderCall]): NimNode =
+  detectTypeImpl itrbl:
+    var temp: seq[TypeTransformer]
+    for c in callChain:
+      case c.kind:
+      of hoMap:
+        temp.add TypeTransformer(kind: hoMap, expr: c.expr)
+
+      of hoCustom:
+        temp.add TypeTransformer(kind: hoCustom, name: c.name, params: c.params)
+
+      else: discard
+
+    temp
+
+func resolveIteratorAliases(ipack: var IterrrPack) =
   for c in ipack.callChain.mitems:
-    c.param = c.param.replacedIteratorIdents(c.iteratorIdentAliases)
+    if c.kind != hoCustom:
+      c.expr = c.expr.replacedIteratorIdents(c.iteratorIdentAliases)
 
-proc inspect(s: seq[NimNode]): seq[NimNode] {.used.} =
-  ## debugging purposes
-  for n in s:
-    echo treeRepr n
-
-  s
+proc appendAccs(node: NimNode, by: string) =
+  ## appends `by` to every nnkAccQuote node recursively
+  for i, n in node:
+    if n.kind == nnkAccQuoted:
+      node[i] = n &. by
+    else:
+      appendAccs n, by
 
 proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     code: NimNode = nil): NimNode =
@@ -123,16 +174,15 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
   let
     hasCustomCode = code != nil
-    noAcc = hasCustomCode and ipack.reducer.caller.strval == "each"
-    hasInplaceReducer = ipack.reducer.caller.strVal == "reduce"
+    noAcc = hasCustomCode and eqident(ipack.reducer.caller, "each")
+    hasInplaceReducer = eqident(ipack.reducer.caller, "reduce")
 
     accIdent = ident "acc"
     itIdent = ident "it"
     mainLoopIdent = ident "mainLoop"
     reducerStateUpdaterProcIdent = ipack.reducer.caller
-    reducerFinalizerProcIdent = ident ipack.reducer.caller.strVal & "Finalizer"
-    reducerInitProcIdent = ident ipack.reducer.caller.strval & "Init"
-
+    reducerFinalizerProcIdent = ipack.reducer.caller &. "Finalizer"
+    reducerInitProcIdent = ipack.reducer.caller &. "Init"
     accDef =
       if noAcc: newEmptyNode()
 
@@ -143,9 +193,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
       else:
         let
-          dtype = detectType itrbl:
-            ipack.callChain.filterIt(it.kind == hoMap).mapIt(it.param)
-
+          dtype = detectType(itrbl, ipack.callChain)
           reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent,
               dtype).newCall.add:
             ipack.reducer.params
@@ -162,38 +210,45 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
             ipack.reducer.params[1]
         else:
           accIdent
+      elif noAcc:
+        newEmptyNode()
       else:
         newCall(reducerFinalizerProcIdent, accIdent)
 
+  var
+    wrappers: seq[tuple[code: NimNode, dtype: NimNode, params: seq[NimNode],
+        info: AdapterInfo]]
+    loopBody =
+      if noAcc:
+        code.replacedIteratorIdents(ipack.reducer.params)
 
-  var loopBody =
-    if noAcc:
-      code.replacedIteratorIdents(ipack.reducer.params)
-
-    elif hasInplaceReducer:
-      if ipack.reducer.idents.len == 2:
-        case ipack.reducer.idents[1].kind:
-        of nnkIdent:
-          code.replacedIdents(ipack.reducer.idents, [accIdent, itIdent])
-        of nnkTupleConstr:
-          let
-            customIdents = ipack.reducer.idents[1].toseq
-            repls = buildBracketExprOf(ident "it", customIdents.len)
-          code.replacedIdents(ipack.reducer.idents[0] & customIdents, @[
-              accIdent] & repls)
+      elif hasInplaceReducer:
+        if ipack.reducer.idents.len == 2:
+          let k = ipack.reducer.idents[1].kind
+          case k:
+          of nnkIdent:
+            code.replacedIdents(ipack.reducer.idents, [accIdent, itIdent])
+          of nnkTupleConstr:
+            let
+              customIdents = ipack.reducer.idents[1].toseq
+              repls = genBracketExprOf(ident "it", customIdents.len)
+            code.replacedIdents(ipack.reducer.idents[0] & customIdents, @[
+                accIdent] & repls)
+          else:
+            err "invalid inplace reducer custom ident type. got: " & $k
         else:
-          raise newException(ValueError,
-              "invalid inplace reducer custom ident type") # TODO easier error
+          code
+
       else:
-        code
+        quote:
+          if not `reducerStateUpdaterProcIdent`(`accIdent`, `itIdent`):
+            break `mainLoopIdent`
 
-    else:
-      quote:
-        if not `reducerStateUpdaterProcIdent`(`accIdent`, `itIdent`):
-          break `mainLoopIdent`
 
-  for call in ipack.callChain.ritems:
-    let p = call.param
+  for i, call in ipack.callChain.rpairs:
+    let p =
+      if call.kind == hoCustom: newEmptyNode()
+      else: call.expr
 
     loopBody = block:
       case call.kind:
@@ -208,29 +263,62 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
           if `p`:
             `loopBody`
 
-      of hoBreackIf:
+      of hoBreakIf:
         quote:
           if `p`:
             break `mainLoopIdent`
           else:
             `loopBody`
 
+      of hoDo:
+        newStmtList p, loopBody
 
-  newBlockStmt:
-    if noAcc:
-      quote:
-        for `itIdent` in `itrbl`:
-          `loopBody`
+      of hoCustom:
+        let adptr = customAdapters[call.name.strval]
+        var code = copy adptr.wrapperCode
 
-    else:
-      quote:
-        `accDef`
+        code.appendAccs $i
 
-        block `mainLoopIdent`:
-          for `itIdent` in `itrbl`:
-            `loopBody`
+        for yp in adptr.yeildPaths:
+          code.replaceNode yp:
+            let yval = code.getNode(yp)[0]
 
-        `accFinalizeCall`
+            if eqIdent(yval, ident"it"):
+              loopBody
+            else:
+              quote:
+                block:
+                  let `itIdent` = `yval`
+                  `loopBody`
+
+        wrappers.add:
+          (code, detectType(itrbl, ipack.callChain[0..i-1]), call.params, adptr)
+
+        code.getNode(adptr.loopPath)[ForBody]
+
+
+  result = quote:
+    for `itIdent` in `itrbl`:
+      `loopBody`
+
+  for w in wrappers.ritems:
+    result = block:
+      w.code.replaceNode w.info.loopPath, result
+
+      for p in w.info.iterTypePaths:
+        w.code.replaceNode p, w.dtype
+
+      for i, p in w.params:
+        w.code.replaceNode w.info.argsValuePaths[i], p
+
+      w.code
+
+  result = quote:
+    block:
+      `accDef`
+      block `mainLoopIdent`:
+        `result`
+      `accFinalizeCall`
 
 # main ---------------------------------------
 
@@ -248,15 +336,16 @@ template footer: untyped {.dirty.} =
 
 macro `!>`*(itrbl, body): untyped =
   result = iterrrImpl(itrbl, flattenNestedDotExprCall body)
-  echo "## ", repr(itrbl), " >< ", repr(body)
+  echo "## ", repr(itrbl), " !> ", repr(body)
   footer
 
 macro `!>`*(itrbl, body, code): untyped =
   result = iterrrImpl(itrbl, flattenNestedDotExprCall body, code)
   echo "#["
-  echo repr(itrbl), " >< ", repr(body), ":\n", indent(repr code, 4)
+  echo repr(itrbl), " !> ", repr(body), ":\n", indent(repr code, 4)
   echo "#]"
   footer
+
 
 template iterrr*(itrbl, body, code): untyped =
   itrbl |> body:
@@ -279,5 +368,4 @@ macro iterrr*(itrbl, body): untyped =
     iterrrImpl itrbl, flattenNestedDotExprCall body
 
   else:
-    raise newException(ValueError, "invalid type")
-
+    err "invalid type. expected nnkCall or nnkStmtList but got: " & $body.kind

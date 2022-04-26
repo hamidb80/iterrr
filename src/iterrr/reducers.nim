@@ -5,13 +5,13 @@ template rangeError(): untyped =
 
 # --------------------------------------
 
-func iseqInit*[T](): seq[T] = newseq[T]()
+func toSeqInit*[T](): seq[T] = newseq[T]()
 
-func iseq*[T](acc: var seq[T], n: T): bool =
+func toSeq*[T](acc: var seq[T], n: T): bool =
   acc.add n
   true
 
-template iseqFinalizer*(n): untyped = n
+template toSeqFinalizer*(n): untyped = n
 
 # --------------------------------------
 
@@ -119,13 +119,13 @@ template allFinalizer*(n): untyped = n
 # --------------------------------------
 import std/sets
 
-func iHashSetInit*[T](): HashSet[T] = initHashSet[T]()
+func toHashSetInit*[T](): HashSet[T] = initHashSet[T]()
 
-func iHashSet*[T](res: var HashSet[T], n: T): bool =
+func toHashSet*[T](res: var HashSet[T], n: T): bool =
   res.incl n
   true
 
-template iHashSetFinalizer*(n): untyped = n
+template toHashSetFinalizer*(n): untyped = n
 
 # --------------------------------------
 

@@ -1,57 +1,62 @@
-import std/[unittest, tables, sets, sequtils, strutils, math]
+import std/[unittest, sets, sequtils, strutils, math]
 import iterrr
 
+suite "main entities":
+  test "maps":
+    check (1..5) |>
+      map($it).
+      map(it & "0").
+      map(parseInt it).
+      toSeq() == @[10, 20, 30, 40, 50]
 
-suite "adapters":
-  test "map + filter":
-    check ((1..5) |> map(it * it).filter(it > 10)) == @[16, 25]
+  test "filters":
+    check (1..5) |>
+      filter(it mod 2 == 1).
+      filter(it != 3).
+      toSeq() == @[1, 5]
 
   test "breakif":
-    check (1..5) |> map(it ^ 2).breakif(it == 4) == @[1]
+    check (1..5) |> breakif(it == 4).toSeq() == @[1, 2, 3]
 
-suite "code gen":
-  test "Table.pairs":
-    let
-      t = newOrderedTable {"a": 1, "b": 2, "c": 3}
-      res = t.pairs |> map(it[0] & ": " & $it[1]).strJoin(", ")
+  test "do":
+    var c = 0
+    discard "yes".items |> filter(true).do(inc c).toSeq()
+    check c == 3
 
-    check res == "a: 1, b: 2, c: 3"
+  test "mix":
+    check (1..5) |> map(it * it).filter(it > 10).toSeq() == @[16, 25]
 
-  test "long chain":
-    let res =
-      [-2, -1, 0, 1, 2].items |>
-        map($it)
-        .filter(it != "0")
-        .filter('-' in it)
-        .map(parseInt it)
-
-    check res == @[-2, -1]
+    var c = 0
+    check "yes".items |> map((c, it)).do(inc c).toSeq() == @[(0, 'y'), (1, 'e'),
+        (2, 's')]
 
 suite "custom ident :: []":
   test "1":
-    check ((1..10) |> filter[i](i < 5)) == @[1, 2, 3, 4]
+    check (1..10) |> filter[i](i < 5).toSeq() == @[1, 2, 3, 4]
 
   test "1+":
-    check ((1..10) |> filter[i](i <= 5)) == toseq 1..5
-    check ("hello".pairs |> map[i, c](i + ord(c))) == @[104, 102, 110, 111, 115]
+    check (1..10) |> filter[i](i <= 5).toSeq() == toseq 1..5
+    check "hello".pairs |> map[i, c](i + ord(c)).toSeq() == @[104, 102, 110,
+        111, 115]
 
   test "chain":
     let res = (1..30) |>
       map[n]($n)
       .filter[s](s.len == 1)
       .map[s](parseInt s)
+      .toSeq()
 
     check res == toseq 1..9
 
 suite "custom ident :: =>":
   test "single":
-    check (1..10) |> filter(n => n in 3..5) == @[3, 4, 5]
+    check (1..10) |> filter(n => n in 3..5).toSeq() == @[3, 4, 5]
 
   test "single inside pars":
-    check (1..10) |> filter((n) => n in 2..4) == @[2, 3, 4]
+    check (1..10) |> filter((n) => n in 2..4).toSeq() == @[2, 3, 4]
 
   test "multi":
-    check "hello".pairs |> map((idx, c) => c) == toseq "hello".toseq
+    check "hello".pairs |> map((idx, c) => c).toSeq() == toseq "hello".toseq
 
 suite "custom ident :: reduce":
   test "1":
@@ -69,7 +74,7 @@ suite "custom ident :: reduce":
       res[0] == "hello"
       res[1] == sum toseq 0..("hello".high)
 
-test "custom code":
+test "custom code (AKA no reducer)":
   var acc: string
   (1..10) |> filter(it in 3..5).map($(it+1)).each(num):
     acc &= num
@@ -184,5 +189,49 @@ suite "reducers":
   test "strJoin":
     check (1..4) |> strJoin(";") == "1;2;3;4"
 
-  test "iHashSet":
-    check (-5..5) |> map(abs it).iHashSet() == toHashSet toseq 0..5
+  test "toHashSet":
+    check (-5..5) |> map(abs it).toHashSet() == toHashSet toseq 0..5
+
+suite "adapters":
+  let matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+  ]
+
+  test "cycle":
+    check (1..3) |> cycle(7).toseq() == @[1, 2, 3, 1, 2, 3, 1]
+
+  test "flatten":
+    check matrix.items |> flatten().toseq() == toseq(1..9)
+
+  test "group":
+    check (1..5) |> group(2).toseq() == @[@[1,2], @[3, 4], @[5]]
+    check (1..5) |> group(2, false).toseq() == @[@[1,2], @[3, 4]]
+
+  test "mix":
+    check matrix.items |> flatten().cycle(11).group(4).toseq() == @[
+      @[1, 2, 3, 4], @[5, 6, 7, 8], @[9, 1, 2]
+    ]
+
+suite "custom adapter":
+  test "typed args":
+    iterator plus(loop: T; `by`: int): T {.adapter.} =
+      for it in loop:
+        yield it + `by`
+
+    check (1..5) |> plus(2).toseq() == toseq(3..7)
+
+  test "untyped args":
+    iterator plus(loop: T; `by`): T {.adapter.} =
+      for it in loop:
+        yield it + `by`
+
+    check (1..5) |> plus(2).toseq() == toseq(3..7)
+
+  test "multi args":
+    iterator alu(loop: T; `adder`, `mult`: int): T {.adapter.} =
+      for it in loop:
+        yield (it + `adder`) * `mult`
+
+    check (1..3) |> alu(1, -1).toseq() == @[-2, -3, -4]
