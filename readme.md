@@ -264,7 +264,7 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 :: [PMunch](https://github.com/PMunch/)
 
 ## Change Logs
-### `0.3.8` -> `0.4.0`: comming soon ...
+### `0.3.8` -> `0.4.0`:
 - remove `ifor`
 - add custom adapter
 - remove default reducer
