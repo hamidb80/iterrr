@@ -42,7 +42,7 @@ type
   AdapterInfo = ref object
     wrapperCode: NimNode
     loopPath: NodePath
-    iterTypePaths, yeildPaths, argsValuePaths, uniqIdentPaths: seq[NodePath]
+    iterTypePaths, yeildPaths, argsValuePaths: seq[NodePath]
 
 # impl -----------------------------------------
 
@@ -169,6 +169,14 @@ func resolveIteratorAliases(ipack: var IterrrPack) =
     if c.kind != hoCustom:
       c.expr = c.expr.replacedIteratorIdents(c.iteratorIdentAliases)
 
+proc appendAccs(node: NimNode, by: string) =
+  ## appends `by` to every nnkAccQuote node
+  for i, n in node:
+    if n.kind == nnkAccQuoted:
+      node[i] = n &. by
+    else:
+      appendAccs n, by
+
 var customAdapters {.compileTime.}: Table[string, AdapterInfo]
 
 macro adapter*(iterDef): untyped =
@@ -195,7 +203,6 @@ macro adapter*(iterDef): untyped =
   let adptr = AdapterInfo(
     argsValuePaths: argsValuePathsAcc,
     wrapperCode: body,
-    uniqIdentPaths: findPaths(body, (n) => n.kind == nnkAccQuoted),
     yeildPaths: findPaths(body, (n) => n.kind == nnkYieldStmt),
     iterTypePaths: findPaths(body, (n) => n.eqIdent itrblId[IdentDefType]),
     loopPath: (
@@ -332,8 +339,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         let adptr = customAdapters[call.name.strval]
         var code = copy adptr.wrapperCode
 
-        for up in adptr.uniqIdentPaths:
-          code.replaceNode up, code.getnode(up) &. $i
+        code.appendAccs $i
 
         for yp in adptr.yeildPaths:
           code.replaceNode yp:

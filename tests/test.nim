@@ -1,8 +1,6 @@
 import std/[unittest, sets, sequtils, strutils, math]
 import iterrr
 
-template self(a): untyped = a
-
 suite "main entities":
   test "maps":
     check (1..5) |>
@@ -29,7 +27,7 @@ suite "main entities":
     check (1..5) |> map(it * it).filter(it > 10).toSeq() == @[16, 25]
 
     var c = 0
-    check "yes".items |> map(self (c, it)).do(inc c).toSeq() == @[(0, 'y'), (1, 'e'), (2, 's')]
+    check "yes".items |> map((c, it)).do(inc c).toSeq() == @[(0, 'y'), (1, 'e'), (2, 's')]
 
 suite "custom ident :: []":
   test "1":
