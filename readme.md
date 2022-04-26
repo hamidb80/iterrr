@@ -222,6 +222,9 @@ iterrr "hello".items: # or "hello".items.iterrr:
 
 ```
 
+### Custom Adapter
+TODO; see `tests`/`test.nim` or `src`/`iterrr`/`adapters` for now.
+
 ## Inspirations
 1. [zero_functional](https://github.com/zero-functional/zero-functional)
 2. [itertools](https://github.com/narimiran/itertools)
