@@ -83,7 +83,8 @@ iterable |> entity1(code).entity2(code)...reducer(args...)
 1. **map** :: similar to `mapIt` from `std/sequtils`
 2. **filter** :: similar to `filterIt` from `std/sequtils`
 3. **breakif** :: similar to `takeWhile` in functional programming languages but negative.
-4. **[reducer]**
+4. **do** :: does something.
+5. **[reducer]**
 
 **NOTE:** you can chain as many `map`/`filter`/... as you want in any order, but there is **only one** reducer.
 
@@ -264,18 +265,20 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 :: [PMunch](https://github.com/PMunch/)
 
 ## Future direction
+improve existing code for now.
+
+## Change Logs
+### `0.3.8` -> `0.4.1`:
+- remove `ifor`
+- add custom adapter
+- remove default reducer
+- replace `i` prefix with `to` for`iseq` & `iHashset` reducers
 - add `do`:
   > just does the given task, nothing else
   ```nim
     let even = (1..10) |> do(echo it).toSeq()
   ```
 
-## Change Logs
-### `0.3.8` -> `0.4.0`:
-- remove `ifor`
-- add custom adapter
-- remove default reducer
-- replace `i` prefix with `to` for`iseq` & `iHashset` reducers
 
 ### `0.3.5` -> `0.3.8`
 - add `breakif` to `ifor`

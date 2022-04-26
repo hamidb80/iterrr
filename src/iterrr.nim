@@ -11,7 +11,7 @@ export reducers, iterators
 
 type
   HigherOrderCallers = enum
-    hoMap, hoFilter, hoBreakIf, hoCustom
+    hoMap, hoFilter, hoBreakIf, hoDo, hoCustom
 
   HigherOrderCall = object
     case kind: HigherOrderCallers
@@ -108,6 +108,7 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
 
     case caller:
     of "map": addToCallChain hoMap
+    of "do": addToCallChain hoDo
     of "filter": addToCallChain hoFilter
     of "breakif": addToCallChain hoBreakIf
 
@@ -323,6 +324,9 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
             break `mainLoopIdent`
           else:
             `loopBody`
+
+      of hoDo:
+        newStmtList p, loopBody
 
       of hoCustom:
         let adptr = customAdapters[call.name.strval]
