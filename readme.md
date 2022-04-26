@@ -50,21 +50,21 @@ Which can be quite expensive(time/resource consuming) task.
 
 **by writing this:**
 ```nim
-(1..20) |> filter(it > 5).map(it * 2)
+(1..20) |> filter(it > 5).map(it * 2).toSeq()
 ```
 **you get this:**
 ```nim
-var acc = iseqInit[typeof(default(typeof(1..20)) * 2)]()
+var acc = toSeqInit[typeof(default(typeof(1..20)) * 2)]()
 
 block mainLoop:
   for it in (1..20):
     if it > 5:
       block:
         let it = it * 2
-        if not iseq(acc, it):
+        if not toSeq(acc, it):
           break mainLoop
 
-iseqFinalizer acc
+toSeqFinalizer acc
 ```
 
 it's not as clean as hand-written code, but it's good enough.
@@ -88,7 +88,7 @@ iterable |> map(operation).filter(cond).breakif(cond).[reducer(args...)]
 **NOTE:** you can chain as many `map`/`filter`/... as you want in any order, but there is **only one** reducer.
 
 you can use other reducers, such as:
-* `iseq` [the default reducer] :: stores elements into a `seq`
+* `toSeq` :: stores elements into a `seq`
 * `count` :: counts elements
 * `sum` :: calculates summation
 * `min` :: calculates minimum
@@ -97,7 +97,7 @@ you can use other reducers, such as:
 * `last` :: returns the last item
 * `any` :: similar to `any` from `std/sequtils`
 * `all` :: similar to `all` from `std/sequtils`
-* `iHashSet` :: stores elements into a `HashSet`
+* `toHashSet` :: stores elements into a `HashSet`
 * `strJoin` :: similar to `join` from `std/strutils`
 * **[your custom reducer!]**
 
@@ -262,6 +262,13 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 ## Foot Notes
 > writing a macro is kind of addicting...
 :: [PMunch](https://github.com/PMunch/)
+
+## Future direction
+- add `do`:
+  > just does the given task, nothing else
+  ```nim
+    let even = (1..10) |> do(echo it).toSeq()
+  ```
 
 ## Change Logs
 ### `0.3.8` -> `0.4.0`:
