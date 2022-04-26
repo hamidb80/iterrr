@@ -279,7 +279,7 @@ improve existing code for now.
 - add `do`:
   > just does the given task, nothing else
   ```nim
-    let even = (1..10) |> do(echo it).toSeq()
+    let even = (1..10) |> map(it+1).do(echo it).toSeq()
   ```
 
 
