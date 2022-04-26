@@ -210,8 +210,8 @@ suite "adapters":
     check (1..5) |> group(2, false).toseq() == @[@[1,2], @[3, 4]]
 
   test "mix":
-    check matrix.items |> flatten().cycle(11).group(4).toseq() == @[
-      @[1, 2, 3, 4], @[5, 6, 7, 8], @[9, 1, 2]
+    check matrix.items |> flatten().map(-it).cycle(11).group(4).toseq() == @[
+      @[-1, -2, -3, -4], @[-5, -6, -7, -8], @[-9, -1, -2]
     ]
 
 suite "custom adapter":
@@ -236,7 +236,6 @@ suite "custom adapter":
 
     check (1..5) |> plus().toseq() == toseq(3..7)
     check (1..5) |> plus(1).toseq() == toseq(2..6)
-
 
   test "multi args":
     iterator alu(loop: T; `adder`, `mult`: int): T {.adapter.} =
