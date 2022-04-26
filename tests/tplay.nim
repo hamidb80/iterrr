@@ -19,12 +19,12 @@ iterator flatten(itrbl: T): typeof itrbl[0] {.adapter.} =
       yield it
 
 iterator group(loop: T; `every`: int, `inComplete`: bool = false): seq[T] {.adapter.} =
-  var `gacc` = newseq[T]()
+  var `gacc` = newSeqOfCap[T](`every`)
   for it in loop:
     `gacc`.add it
     if `gacc`.len == `every`:
       yield `gacc`
-      `gacc` = @[]
+      setLen `gacc`, 0
   
   if (`gacc`.len != 0) and `inComplete`:
     yield `gacc`
