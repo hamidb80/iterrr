@@ -1,35 +1,25 @@
-import std/[unittest, tables, sets, sequtils, strutils, math]
+import std/[unittest, sets, sequtils, strutils, math]
 import iterrr
 
+suite "main entities":
+  test "maps":
+    check (1..5) |>
+      map($it).
+      map(it & "0").
+      map(parseInt it).
+      toSeq() == @[10, 20, 30, 40, 50]
 
-suite "adapters":
-  test "map + filter":
-    check (1..5) |> map(it * it).filter(it > 10).toSeq() == @[16, 25]
+  test "filters":
+    check (1..5) |>
+      filter(it mod 2 == 1).
+      filter(it != 3).
+      toSeq() == @[1, 5]
 
   test "breakif":
-    check (1..5) |> map(it ^ 2).breakif(it == 4).toSeq() == @[1]
+    check (1..5) |> breakif(it == 4).toSeq() == @[1, 2, 3]
 
-  test "custom":
-    discard
-
-suite "code gen":
-  test "Table.pairs":
-    let
-      t = newOrderedTable {"a": 1, "b": 2, "c": 3}
-      res = t.pairs |> map(it[0] & ": " & $it[1]).strJoin(", ")
-
-    check res == "a: 1, b: 2, c: 3"
-
-  test "long chain":
-    let res =
-      [-2, -1, 0, 1, 2].items |>
-        map($it)
-        .filter(it != "0")
-        .filter('-' in it)
-        .map(parseInt it)
-        .toSeq()
-
-    check res == @[-2, -1]
+  test "mix":
+    check (1..5) |> map(it * it).filter(it > 10).toSeq() == @[16, 25]
 
 suite "custom ident :: []":
   test "1":
@@ -37,7 +27,8 @@ suite "custom ident :: []":
 
   test "1+":
     check (1..10) |> filter[i](i <= 5).toSeq() == toseq 1..5
-    check "hello".pairs |> map[i, c](i + ord(c)).toSeq() == @[104, 102, 110, 111, 115]
+    check "hello".pairs |> map[i, c](i + ord(c)).toSeq() == @[104, 102, 110,
+        111, 115]
 
   test "chain":
     let res = (1..30) |>
@@ -191,3 +182,6 @@ suite "reducers":
 
   test "toHashSet":
     check (-5..5) |> map(abs it).toHashSet() == toHashSet toseq 0..5
+
+suite "adapters":
+  discard

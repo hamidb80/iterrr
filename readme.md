@@ -76,7 +76,7 @@ and `!>` for debug mode.
 
 **here's the pattern**
 ```nim
-iterable |> map(operation).filter(cond).breakif(cond).[reducer(args...)]
+iterable |> entity1(code).entity2(code)...reducer(args...)
 ```
 
 ### Main Entities:

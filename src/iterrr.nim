@@ -146,10 +146,7 @@ func detectTypeImpl(itrbl: NimNode, ttrfs: seq[TypeTransformer]): NimNode =
 
       else: impossible
 
-  if ttrfs.len > 0 and ttrfs.last.kind == hoCustom:
-    cursor
-  else:
-    inlineQuote typeof(`cursor`)
+  inlineQuote typeof(`cursor`)
 
 func detectType(itrbl: NimNode, callChain: seq[HigherOrderCall]): NimNode =
   detectTypeImpl itrbl:
