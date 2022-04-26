@@ -229,6 +229,15 @@ suite "custom adapter":
 
     check (1..5) |> plus(2).toseq() == toseq(3..7)
 
+  test "default value":
+    iterator plus(loop: T; `by`: int = 2): T {.adapter.} =
+      for it in loop:
+        yield it + `by`
+
+    check (1..5) |> plus().toseq() == toseq(3..7)
+    check (1..5) |> plus(1).toseq() == toseq(2..6)
+
+
   test "multi args":
     iterator alu(loop: T; `adder`, `mult`: int): T {.adapter.} =
       for it in loop:
