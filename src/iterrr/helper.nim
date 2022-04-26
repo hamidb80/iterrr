@@ -3,12 +3,20 @@ import macroplus
 
 type NodePath* = seq[int]
 
-# conventions -----------------------
+# conventions -----------------------------
 
 template err*(msg): untyped =
   raise newException(ValueError, msg)
 
-# meta programming ------------------
+template impossible*: untyped =
+  err "imposible"
+
+# common utilities ------------------------
+
+func last*[T](s: seq[T]): T {.inline.} =
+  s[s.high]
+
+# meta programming stuff ------------------
 
 proc replacedIdents*(root: NimNode, targets, bys: openArray[NimNode]): NimNode =
   if root.kind == nnkIdent:
@@ -22,7 +30,7 @@ proc replacedIdents*(root: NimNode, targets, bys: openArray[NimNode]): NimNode =
     copyNimNode(root).add:
       root.mapIt replacedIdents(it, targets, bys)
 
-proc replacedIdent*(root: NimNode, target, by: NimNode): NimNode =
+proc replacedIdent*(root: NimNode, target, by: NimNode): NimNode {.inline.} =
   replacedIdents(root, [target], [by])
 
 proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
@@ -57,7 +65,7 @@ proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
   else:
     err "invalid caller"
 
-proc flattenNestedDotExprCall*(n: NimNode): seq[NimNode] =
+proc flattenNestedDotExprCall*(n: NimNode): seq[NimNode] {.inline.} =
   ## imap[T](1).ifilter(2).imax()
   ##
   ## converts to >>>
@@ -90,8 +98,10 @@ proc replaceNode*(node: NimNode, path: NodePath, by: NimNode) =
   cur[path[^1]] = by
 
 
-func findPathsImpl(node: NimNode, fn: proc(node: NimNode): bool,
-  path: NodePath, result: var seq[NodePath]) =
+func findPathsImpl(node: NimNode,
+  fn: proc(node: NimNode): bool,
+  path: NodePath,
+  result: var seq[NodePath]) =
 
   if fn node:
     result.add path
@@ -100,9 +110,7 @@ func findPathsImpl(node: NimNode, fn: proc(node: NimNode): bool,
     for i, n in node:
       findPathsImpl n, fn, path & @[i], result
 
-func findPaths*(node: NimNode, fn: proc(node: NimNode): bool): seq[NodePath] =
+func findPaths*(node: NimNode,
+  fn: proc(node: NimNode): bool): seq[NodePath] {.inline.} =
+
   findPathsImpl node, fn, @[], result
-
-
-func last*[T](s: seq[T]): T =  
-  s[s.high]

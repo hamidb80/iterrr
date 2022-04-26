@@ -18,7 +18,7 @@ iterator flatten(itrbl: T): typeof itrbl[0] {.adapter.} =
     for it in it:
       yield it
 
-iterator group(loop: T; `every`, `wow`: int = 1): seq[T] {.adapter.} =
+iterator group(loop: T; `every`: int, `inComplete`: bool = false): seq[T] {.adapter.} =
   var `gacc` = newseq[T]()
   for it in loop:
     `gacc`.add it
@@ -26,6 +26,8 @@ iterator group(loop: T; `every`, `wow`: int = 1): seq[T] {.adapter.} =
       yield `gacc`
       `gacc` = @[]
   
+  if (`gacc`.len != 0) and `inComplete`:
+    yield `gacc`
   
 
 # test -----------------------------------
@@ -36,8 +38,8 @@ let matrix = [
   [7, 8, 9]
 ]
 
-# echo matrix.items |> flatten().cycle(10).group(2).toseq()
-# echo matrix.items !> flatten().cycle(10).toseq()
-# echo matrix.items !> cycle(5).toseq()
-# echo matrix.items !> flatten().toseq()
-# echo matrix.items !> group(2).toseq()
+echo matrix.items |> flatten().cycle(10).group(2).toseq()
+echo matrix.items !> flatten().cycle(10).toseq()
+echo matrix.items !> cycle(5).toseq()
+echo matrix.items !> flatten().toseq()
+echo matrix.items !> group(2).toseq()

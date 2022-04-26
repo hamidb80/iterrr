@@ -4,9 +4,10 @@ import ./iterrr/[reducers, helper, iterators]
 
 export reducers, iterators
 
-# def ------------------------------------------
+# FIXME correct param & args names
+# TODO add debugging for adapter and debug flag
 
-## FIXME correct param & args names
+# type def ------------------------------------------
 
 type
   HigherOrderCallers = enum
@@ -19,7 +20,7 @@ type
       params: seq[NimNode]
     else:
       iteratorIdentAliases: seq[NimNode]
-      param: NimNode
+      expr: NimNode
 
   ReducerCall = object
     caller: NimNode
@@ -43,18 +44,14 @@ type
     loopPath: NodePath
     iterTypePaths, yeildPaths, argsValuePaths, uniqIdentPaths: seq[NodePath]
 
-
 # impl -----------------------------------------
-
-## TODO better error msg
-## TODO: add doc for procs
 
 func `&.`(id: NimNode, str: string): NimNode =
   ## concatinates Nim's ident with custom string
   case id.kind:
   of nnkIdent: ident id.strVal & str
   of nnkAccQuoted: id[0] &. str
-  else: err "what?!+" & " " & treerepr(id) & " ::"
+  else: err "exptected nnkIdent or nnkAccQuoted but got " & $id.kind
 
 func getIteratorIdents(call: NimNode): seq[NimNode] =
   ## extracts custom iterator param names:
@@ -62,7 +59,7 @@ func getIteratorIdents(call: NimNode): seq[NimNode] =
   ## map(x => ...) => @[x]
   ## map((x) => ...) => @[x]
   ## map((x, y) => ...) => @[x, y]
-  ## map[x](...) => @[x]
+  ## map[x](...) => @[x]err
   ## map[x, y](...) => @[x, y]
 
   if call[CallIdent].kind == nnkBracketExpr:
@@ -77,13 +74,14 @@ func getIteratorIdents(call: NimNode): seq[NimNode] =
     of nnkPar: @[args[0]]
     of nnkTupleConstr: args.children.toseq
     else:
-      err "invalid custom ident style"
+      err "invalid custom ident style. got: " & $args.kind
 
   else:
     @[]
 
-func buildBracketExprOf(id: NimNode, len: int): seq[NimNode] =
-  for i in (0..<len):
+func genBracketExprOf(id: NimNode, len: int): seq[NimNode] =
+  ## (`it`, 10) => [`it`[0[, `it`[1], `it`[2], ...]
+  for i in 0 ..< len:
     result.add newTree(nnkBracketExpr, id, newIntLitNode i)
 
 func replacedIteratorIdents(expr: NimNode, aliases: seq[NimNode]): NimNode =
@@ -91,7 +89,7 @@ func replacedIteratorIdents(expr: NimNode, aliases: seq[NimNode]): NimNode =
   of 0: expr
   of 1: expr.replacedIdent(aliases[0], ident "it")
   else:
-    expr.replacedIdents(aliases, buildBracketExprOf(ident"it", aliases.len))
+    expr.replacedIdents(aliases, genBracketExprOf(ident"it", aliases.len))
 
 func toIterrrPack(calls: seq[NimNode]): IterrrPack =
   var hasReducer = false
@@ -100,7 +98,7 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
       result.callChain.add HigherOrderCall(
         kind: higherOrderKind,
         iteratorIdentAliases: getIteratorIdents n,
-        param: n[CallArgs[0]])
+        expr: n[CallArgs[0]])
 
     let caller = normalize:
       if n[CallIdent].kind == nnkBracketExpr:
@@ -137,7 +135,7 @@ func detectTypeImpl(itrbl: NimNode, ttrfs: seq[TypeTransformer]): NimNode =
   var cursor = inlineQuote default(typeof(`itrbl`))
 
   for t in ttrfs:
-    cursor = 
+    cursor =
       case t.kind:
       of hoMap:
         replacedIdent(t.expr, ident "it", cursor)
@@ -146,8 +144,7 @@ func detectTypeImpl(itrbl: NimNode, ttrfs: seq[TypeTransformer]): NimNode =
         newCall ident"default":
           newCall(t.name &. "Type", cursor).add t.params
 
-      else: 
-        err "impossible"
+      else: impossible
 
   if ttrfs.len > 0 and ttrfs.last.kind == hoCustom:
     cursor
@@ -160,7 +157,7 @@ func detectType(itrbl: NimNode, callChain: seq[HigherOrderCall]): NimNode =
     for c in callChain:
       case c.kind:
       of hoMap:
-        temp.add TypeTransformer(kind: hoMap, expr: c.param)
+        temp.add TypeTransformer(kind: hoMap, expr: c.expr)
 
       of hoCustom:
         temp.add TypeTransformer(kind: hoCustom, name: c.name, params: c.params)
@@ -172,26 +169,17 @@ func detectType(itrbl: NimNode, callChain: seq[HigherOrderCall]): NimNode =
 func resolveIteratorAliases(ipack: var IterrrPack) =
   for c in ipack.callChain.mitems:
     if c.kind != hoCustom:
-      c.param = c.param.replacedIteratorIdents(c.iteratorIdentAliases)
-
-proc inspect(s: seq[NimNode]): seq[NimNode] {.used.} =
-  ## debugging purposes
-  for n in s:
-    echo treeRepr n
-  s
-
+      c.expr = c.expr.replacedIteratorIdents(c.iteratorIdentAliases)
 
 var customAdapters {.compileTime.}: Table[string, AdapterInfo]
 
 macro adapter*(iterDef): untyped =
   expectKind iterDef, nnkIteratorDef
-
   let
     args = iterdef.RoutineArguments
     itrblId = args[0]
-
   var
-    adptr = AdapterInfo()
+    argsValuePathsAcc: seq[NodePath]
     body = iterDef[RoutineBody]
     argsDef = newTree nnkLetSection
 
@@ -201,25 +189,27 @@ macro adapter*(iterDef): untyped =
       let idef = args[i]
       for t in 0 .. idef.len-3: # for multi args like (a,b: int)
         argsDef.add newIdentDefs(idef[t], idef[IdentDefType], idef[IdentDefDefaultVal])
-        adptr.argsValuePaths.add @[0, c, 2]
+        argsValuePathsAcc.add @[0, c, 2]
         inc c
 
     body.insert 0, argsDef
 
-  adptr.wrapperCode = body
-  adptr.uniqIdentPaths = findPaths(body, (n) => n.kind == nnkAccQuoted)
-  adptr.yeildPaths = findPaths(body, (n) => n.kind == nnkYieldStmt)
-  adptr.iterTypePaths = findPaths(body, (n) => n.eqIdent itrblId[IdentDefType])
-  adptr.loopPath = block:
-    let temp = findPaths(body,
-      (n) => n.kind == nnkForStmt and eqIdent(n[ForRange], itrblId[IdentDefName]))
+  let adptr = AdapterInfo(
+    argsValuePaths: argsValuePathsAcc,
+    wrapperCode: body,
+    uniqIdentPaths: findPaths(body, (n) => n.kind == nnkAccQuoted),
+    yeildPaths: findPaths(body, (n) => n.kind == nnkYieldStmt),
+    iterTypePaths: findPaths(body, (n) => n.eqIdent itrblId[IdentDefType]),
+    loopPath: (
+      let temp = findPaths(body,
+        (n) => n.kind == nnkForStmt and eqIdent(n[ForRange], itrblId[IdentDefName]))
 
-    assert temp.len == 1, "there must be only one main loop"
-    temp[0]
-
+      assert temp.len == 1, "there must be only one main loop"
+      temp[0]
+    ))
 
   customAdapters[iterdef[RoutineName].strVal] = adptr
-  echo repr adptr
+  # echo repr adptr
 
   result = newProc(
     iterDef[RoutineName] &. "Type",
@@ -291,17 +281,18 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
       elif hasInplaceReducer:
         if ipack.reducer.idents.len == 2:
-          case ipack.reducer.idents[1].kind:
+          let k = ipack.reducer.idents[1].kind
+          case k:
           of nnkIdent:
             code.replacedIdents(ipack.reducer.idents, [accIdent, itIdent])
           of nnkTupleConstr:
             let
               customIdents = ipack.reducer.idents[1].toseq
-              repls = buildBracketExprOf(ident "it", customIdents.len)
+              repls = genBracketExprOf(ident "it", customIdents.len)
             code.replacedIdents(ipack.reducer.idents[0] & customIdents, @[
                 accIdent] & repls)
           else:
-            err "invalid inplace reducer custom ident type" # TODO easier error
+            err "invalid inplace reducer custom ident type. got: " & $k
         else:
           code
 
@@ -314,7 +305,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
   for i, call in ipack.callChain.rpairs:
     let p =
       if call.kind == hoCustom: newEmptyNode()
-      else: call.param
+      else: call.expr
 
     loopBody = block:
       case call.kind:
@@ -355,8 +346,9 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
                   let `itIdent` = `yval`
                   `loopBody`
 
-        wrappers.add (code, itrbl.detectType(ipack.callChain[0..i-1]),
-            call.params, adptr)
+        wrappers.add:
+          (code, detectType(itrbl, ipack.callChain[0..i-1]), call.params, adptr)
+
         code.getNode(adptr.loopPath)[ForBody]
 
 
@@ -374,7 +366,6 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
       for i, p in w.params:
         w.code.replaceNode w.info.argsValuePaths[i], p
 
-      # debugEcho repr code
       w.code
 
   result = quote:
@@ -432,4 +423,4 @@ macro iterrr*(itrbl, body): untyped =
     iterrrImpl itrbl, flattenNestedDotExprCall body
 
   else:
-    err "invalid type"
+    err "invalid type. expected nnkCall or nnkStmtList but got: " & $body.kind
