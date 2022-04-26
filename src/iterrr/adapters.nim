@@ -86,8 +86,8 @@ iterator flatten*(itrbl: T): typeof itrbl[0] {.adapter.} =
     for it in it:
       yield it
 
-iterator group*(loop: T; `every`: int;
-  `excludeInComplete`: bool = false): seq[T] {.adapter.} =
+iterator group*(loop: T; `every`: int,
+  `includeInComplete`: bool = true): seq[T] {.adapter.} =
 
   var `gacc` = newSeqOfCap[T](`every`)
   for it in loop:
@@ -96,5 +96,5 @@ iterator group*(loop: T; `every`: int;
       yield `gacc`
       setLen `gacc`, 0
 
-  if (`gacc`.len != 0) and not `excludeInComplete`:
+  if (`gacc`.len != 0) and `includeInComplete`:
     yield `gacc`

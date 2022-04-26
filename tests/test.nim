@@ -27,7 +27,8 @@ suite "main entities":
     check (1..5) |> map(it * it).filter(it > 10).toSeq() == @[16, 25]
 
     var c = 0
-    check "yes".items |> map((c, it)).do(inc c).toSeq() == @[(0, 'y'), (1, 'e'), (2, 's')]
+    check "yes".items |> map((c, it)).do(inc c).toSeq() == @[(0, 'y'), (1, 'e'),
+        (2, 's')]
 
 suite "custom ident :: []":
   test "1":
@@ -73,7 +74,7 @@ suite "custom ident :: reduce":
       res[0] == "hello"
       res[1] == sum toseq 0..("hello".high)
 
-test "custom code":
+test "custom code (AKA no reducer)":
   var acc: string
   (1..10) |> filter(it in 3..5).map($(it+1)).each(num):
     acc &= num
@@ -192,4 +193,45 @@ suite "reducers":
     check (-5..5) |> map(abs it).toHashSet() == toHashSet toseq 0..5
 
 suite "adapters":
-  discard
+  let matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+  ]
+
+  test "cycle":
+    check (1..3) |> cycle(7).toseq() == @[1, 2, 3, 1, 2, 3, 1]
+
+  test "flatten":
+    check matrix.items |> flatten().toseq() == toseq(1..9)
+
+  test "group":
+    check (1..5) |> group(2).toseq() == @[@[1,2], @[3, 4], @[5]]
+    check (1..5) |> group(2, false).toseq() == @[@[1,2], @[3, 4]]
+
+  test "mix":
+    check matrix.items |> flatten().cycle(11).group(4).toseq() == @[
+      @[1, 2, 3, 4], @[5, 6, 7, 8], @[9, 1, 2]
+    ]
+
+suite "custom adapter":
+  test "typed args":
+    iterator plus(loop: T; `by`: int): T {.adapter.} =
+      for it in loop:
+        yield it + `by`
+
+    check (1..5) |> plus(2).toseq() == toseq(3..7)
+
+  test "untyped args":
+    iterator plus(loop: T; `by`): T {.adapter.} =
+      for it in loop:
+        yield it + `by`
+
+    check (1..5) |> plus(2).toseq() == toseq(3..7)
+
+  test "multi args":
+    iterator alu(loop: T; `adder`, `mult`: int): T {.adapter.} =
+      for it in loop:
+        yield (it + `adder`) * `mult`
+
+    check (1..3) |> alu(1, -1).toseq() == @[-2, -3, -4]
