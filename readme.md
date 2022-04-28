@@ -272,7 +272,8 @@ improve existing code for now.
 
 ## Change Logs
 ### `0.4.1` -> `0.4.2`:
-- optimization
+- optimize
+- fix nim ident style related bug
 
 ### `0.3.8` -> `0.4.1`:
 - remove `ifor`

@@ -1,4 +1,4 @@
-import std/[macros, tables, sugar]
+import std/[macros, tables, sugar, strutils]
 import macroplus
 import helper
 
@@ -47,7 +47,7 @@ macro adapter*(iterDef): untyped =
         temp[0]
       ))
 
-    name = getName iterdef[RoutineName]
+    name = nimIdentNormalize getName iterdef[RoutineName]
     typename = block:
       let i = ident name & "Type"
       if isExportedIdent(iterDef[RoutineName]):

@@ -238,8 +238,8 @@ suite "custom adapter":
     check (1..5) |> plus(1).toseq() == toseq(2..6)
 
   test "multi args":
-    iterator alu(loop: T; `adder`, `mult`: int): T {.adapter.} =
+    iterator ALU(loop: T; `adder`, `mult`: int): T {.adapter.} =
       for it in loop:
         yield (it + `adder`) * `mult`
 
-    check (1..3) |> alu(1, -1).toseq() == @[-2, -3, -4]
+    check (1..3) |> ALU(1, -1).toseq() == @[-2, -3, -4]

@@ -88,7 +88,7 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
         iteratorIdentAliases: getIteratorIdents n,
         expr: n[CallArgs[0]])
 
-    let caller = normalize:
+    let caller = nimIdentNormalize:
       if n[CallIdent].kind == nnkBracketExpr:
         n[CallIdent][BracketExprIdent].strVal
       else:
