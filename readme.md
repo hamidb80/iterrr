@@ -223,6 +223,8 @@ iterrr "hello".items: # or "hello".items.iterrr:
 ```
 
 ### Custom Adapter
+Note: adapters are like dirty templates, you have to import the dependencies of adapters in order to use them.
+
 TODO; see `tests`/`test.nim` or `src`/`iterrr`/`adapters` for now.
 
 ## Inspirations
@@ -286,6 +288,10 @@ improve existing code.
     let even = (1..10) |> map(it+1).do(echo it).toSeq()
   ```
 
+### `0.3.8` -> `0.4.3`
+- remove ifor
+- add custom adapter
+- add [`window`, `group`, `cycle`, `flatten`] adapters
 
 ### `0.3.5` -> `0.3.8`
 - add `breakif` to `ifor`

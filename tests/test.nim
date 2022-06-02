@@ -192,6 +192,8 @@ suite "reducers":
   test "toHashSet":
     check (-5..5) |> map(abs it).toHashSet() == toHashSet toseq 0..5
 
+
+import std/deques
 suite "adapters":
   let matrix = [
     [1, 2, 3],
@@ -206,8 +208,12 @@ suite "adapters":
     check matrix.items |> flatten().toseq() == toseq(1..9)
 
   test "group":
-    check (1..5) |> group(2).toseq() == @[@[1,2], @[3, 4], @[5]]
-    check (1..5) |> group(2, false).toseq() == @[@[1,2], @[3, 4]]
+    check (1..5) |> group(2).toseq() == @[@[1, 2], @[3, 4], @[5]]
+    check (1..5) |> group(2, false).toseq() == @[@[1, 2], @[3, 4]]
+
+  test "window":
+    let acc = (1..5) |> window(3).toseq()
+    check acc.mapIt(it.toseq) ==  @[@[1, 2, 3], @[2, 3, 4], @[3, 4, 5]]
 
   test "mix":
     check matrix.items |> flatten().map(-it).cycle(11).group(4).toseq() == @[

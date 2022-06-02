@@ -92,9 +92,22 @@ iterator group*(loopItems: T; `every`: int;
   var `acc` = newSeqOfCap[T](`every`)
   for it in loopItems:
     `acc`.add it
+
     if `acc`.len == `every`:
       yield `acc`
       setLen `acc`, 0
 
   if (`acc`.len != 0) and `includeInComplete`:
     yield `acc`
+
+import std/deques
+
+iterator window*(loopItems: T; `size`: int): Deque[T] {.adapter.} =
+  var `acc` = initDeque[T]()
+
+  for it in loopItems:
+    `acc`.addLast it
+
+    if `acc`.len == `size`:
+      yield `acc`
+      `acc`.popFirst
