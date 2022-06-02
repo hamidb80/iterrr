@@ -223,9 +223,40 @@ iterrr "hello".items: # or "hello".items.iterrr:
 ```
 
 ### Custom Adapter
-Note: adapters are like dirty templates, you have to import the dependencies of adapters in order to use them.
+**Note:** adapters are like dirty templates, you have to import the dependencies of adapters in order to use them.
 
-TODO; see `tests`/`test.nim` or `src`/`iterrr`/`adapters` for now.
+**Built-in adapter**:
+- `group`
+- `window`
+- `cycle`
+- `flatten`
+
+**Usage**: 
+example:
+
+```nim
+let matrix = [
+  [1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 9]
+]
+
+matrix.items |> flatten().map(-it).cycle(11).group(4).toseq()
+```
+result:
+```nim
+>> @[
+  @[-1, -2, -3, -4], 
+  @[-5, -6, -7, -8], 
+  @[-9, -1, -2] 
+]
+```
+
+*see `tests`/`test.nim` for more.*
+
+**Define your custom adapter**:
+TODO; see `src`/`iterrr`/`adapters`.
+
 
 ## Inspirations
 1. [zero_functional](https://github.com/zero-functional/zero-functional)
