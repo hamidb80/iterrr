@@ -43,7 +43,7 @@ macro adapter*(iterDef): untyped =
         let temp = findPaths(body,
           (n) => n.kind == nnkForStmt and eqIdent(n[ForRange], itrblId[IdentDefName]))
 
-        assert temp.len == 1, "there must be only one main loop"
+        assert temp.len == 1, "there must be only one for loop over main iterable"
         temp[0]
       ))
 
@@ -71,30 +71,30 @@ macro adapter*(iterDef): untyped =
 
 # defs ---------------------------------------
 
-iterator cycle*(itrbl: T; `limit`: int): T {.adapter.} =
+iterator cycle*(loopItems: T; `limit`: int): T {.adapter.} =
   block cycleLoop:
     var `c` = 0
     while true:
-      for it in itrbl:
+      for it in loopItems:
         yield it
         inc `c`
         if `c` == `limit`:
           break cycleLoop
 
-iterator flatten*(itrbl: T): typeof itrbl[0] {.adapter.} =
-  for it in itrbl:
+iterator flatten*(loopItems: T): typeof loopItems[0] {.adapter.} =
+  for it in loopItems:
     for it in it:
       yield it
 
-iterator group*(loop: T; `every`: int,
+iterator group*(loopItems: T; `every`: int;
   `includeInComplete`: bool = true): seq[T] {.adapter.} =
 
-  var `gacc` = newSeqOfCap[T](`every`)
-  for it in loop:
-    `gacc`.add it
-    if `gacc`.len == `every`:
-      yield `gacc`
-      setLen `gacc`, 0
+  var `acc` = newSeqOfCap[T](`every`)
+  for it in loopItems:
+    `acc`.add it
+    if `acc`.len == `every`:
+      yield `acc`
+      setLen `acc`, 0
 
-  if (`gacc`.len != 0) and `includeInComplete`:
-    yield `gacc`
+  if (`acc`.len != 0) and `includeInComplete`:
+    yield `acc`

@@ -267,8 +267,8 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 > writing a macro is kind of addicting...
 :: [PMunch](https://github.com/PMunch/)
 
-## Future direction
-improve existing code for now.
+## Future Direction
+improve existing code.
 
 ## Change Logs
 ### `0.4.1` -> `0.4.2`:
