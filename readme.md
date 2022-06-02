@@ -273,6 +273,9 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 improve existing code.
 
 ## Change Logs
+### `0.4.2` -> `0.4.3`:
+- add `window` adapter
+
 ### `0.4.1` -> `0.4.2`:
 - optimize
 - fix nim ident style related bug
@@ -287,11 +290,6 @@ improve existing code.
   ```nim
     let even = (1..10) |> map(it+1).do(echo it).toSeq()
   ```
-
-### `0.3.8` -> `0.4.3`
-- remove ifor
-- add custom adapter
-- add [`window`, `group`, `cycle`, `flatten`] adapters
 
 ### `0.3.5` -> `0.3.8`
 - add `breakif` to `ifor`
