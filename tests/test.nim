@@ -204,6 +204,12 @@ suite "adapters":
   test "cycle":
     check (1..3) |> cycle(7).toseq() == @[1, 2, 3, 1, 2, 3, 1]
 
+  test "drop":
+    check (1..7) |> drop(3).toseq() == @[4, 5, 6, 7]
+
+  test "take":
+    check (1..7) |> take(3).toseq() == @[1, 2, 3]
+
   test "flatten":
     check matrix.items |> flatten().toseq() == toseq(1..9)
 

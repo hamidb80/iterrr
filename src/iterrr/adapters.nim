@@ -81,6 +81,21 @@ iterator cycle*(loopItems: T; `limit`: int): T {.adapter.} =
         if `c` == `limit`:
           break cycleLoop
 
+iterator drop*(loopItems: T; `limit`: int): T {.adapter.} =
+  var `c` = 0
+  for it in loopItems:
+    inc `c`
+    if `c` > `limit`:
+      yield it
+
+iterator take*(loopItems: T; `limit`: int): T {.adapter.} =
+  var `c` = 0
+  for it in loopItems:
+    if `c` == `limit`: break
+    else: yield it
+    inc `c`
+
+
 iterator flatten*(loopItems: T): typeof loopItems[0] {.adapter.} =
   for it in loopItems:
     for it in it:

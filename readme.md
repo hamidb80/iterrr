@@ -230,6 +230,8 @@ iterrr "hello".items: # or "hello".items.iterrr:
 - `window`
 - `cycle`
 - `flatten`
+- `drop`
+- `take`
 
 **Usage**: 
 example:
@@ -245,7 +247,7 @@ matrix.items |> flatten().map(-it).cycle(11).group(4).toseq()
 ```
 result:
 ```nim
->> @[
+@[
   @[-1, -2, -3, -4], 
   @[-5, -6, -7, -8], 
   @[-9, -1, -2] 
@@ -304,8 +306,11 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 improve existing code.
 
 ## Change Logs
-### `0.4.2` -> `0.4.3`:
-- add `window` adapter
+### `0.4.2` -> `0.4.4`:
+- add new adapters:
+  - `window`
+  - `take`
+  - `drop`
 
 ### `0.4.1` -> `0.4.2`:
 - optimize
