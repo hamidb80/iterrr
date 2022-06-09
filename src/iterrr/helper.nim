@@ -1,4 +1,4 @@
-import std/[macros, sequtils, random]
+import std/[macros, sequtils]
 import macroplus
 
 type NodePath* = seq[int]
@@ -46,7 +46,7 @@ proc replacedIdents*(root: NimNode, targets, bys: openArray[NimNode]): NimNode =
   if root.kind == nnkIdent:
     for i, target in targets:
       if eqIdent(root, target):
-        return bys[i]
+        return bys[i] # FIXME
 
     root
 
@@ -141,6 +141,7 @@ func findPaths*(node: NimNode,
 
 # ------------------------
 
+var c {.compileTime.} = 0
 proc genUniqId*(): string =
-  var rnd = initRand(1423431)
-  ( $ rnd.rand 0.0 .. 1.0)[2 .. ^1] # after dot
+  inc c
+  $c

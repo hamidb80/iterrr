@@ -30,6 +30,13 @@ suite "main entities":
     check "yes".items |> map((c, it)).do(inc c).toSeq() == @[(0, 'y'), (1, 'e'),
         (2, 's')]
 
+test "nested":
+  let r = @[@[1, 2], @[3, 4]].pairs |>
+    map[ia, a](
+      a.pairs |> map[ib, _]((ia, ib)).toseq()).toseq()
+
+  check r == @[@[(0, 0), (0, 1)], @[(1, 0), (1, 1)]]
+
 suite "custom ident :: []":
   test "1":
     check (1..10) |> filter[i](i < 5).toSeq() == @[1, 2, 3, 4]
@@ -115,11 +122,11 @@ suite "non-operator":
     check ("hello".items.iterrr filter(it != 'l').count()) == 3
     check iterrr("hello".items, filter(it != 'l').count()) == 3
 
-  test "inplace reducer":
-    let prod = (3..6).iterrr reduce(1):
-      acc *= it
+  # test "inplace reducer":
+  #   let prod = (3..6).iterrr reduce(1):
+  #     acc *= it
 
-    check prod == 3*4*5*6
+  #   check prod == 3*4*5*6
 
   test "each":
     var acc: seq[int]
