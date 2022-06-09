@@ -2,16 +2,13 @@ import std/[macros, tables, strutils]
 import macroplus
 import helper
 
+
+type AdapterInfo* = ref object
+  wrapperCode*: NimNode
+  loopPath*: NodePath
+  iterTypePaths*, yeildPaths*, loopIterPaths*, argsValuePaths*: seq[NodePath]
+
 # impl ------------------------------------------
-
-type
-  AdapterInfo* = ref object
-    wrapperCode*: NimNode
-    loopPath*: NodePath
-    iterTypePaths*, yeildPaths*, argsValuePaths*: seq[NodePath]
-
-var customAdapters* {.compileTime.}: Table[string, AdapterInfo]
-
 
 proc fillAdapterInfoImpl(a: var AdapterInfo, path: var NodePath,
     body: NimNode, itrType, loopName: NimNode) =
@@ -27,6 +24,9 @@ proc fillAdapterInfoImpl(a: var AdapterInfo, path: var NodePath,
     elif ch.eqIdent itrType:
       a.iterTypePaths.add path
 
+    elif ch.eqIdent ident "it":
+      a.loopIterPaths.add path
+
     elif ch.kind == nnkForStmt and eqIdent(ch[ForRange], loopName):
       if a.loopPath == @[]:
         a.loopPath = path
@@ -40,7 +40,6 @@ proc fillAdapterInfoImpl(a: var AdapterInfo, path: var NodePath,
 
     path.del path.high
 
-
 proc fillAdapterInfo(avp: seq[NodePath], body: NimNode,
   itrType, loopName: NimNode): AdapterInfo =
 
@@ -48,6 +47,7 @@ proc fillAdapterInfo(avp: seq[NodePath], body: NimNode,
   result = AdapterInfo(argsValuePaths: avp, wrapperCode: body)
   fillAdapterInfoImpl result, path, body, itrType, loopName
 
+var customAdapters* {.compileTime.}: Table[string, AdapterInfo]
 
 macro adapter*(iterDef): untyped =
   expectKind iterDef, nnkIteratorDef
