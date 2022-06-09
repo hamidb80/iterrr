@@ -29,7 +29,7 @@ func getName*(node: NimNode): string =
   ## extracts the name for ident and exported ident
   ## `id` => "id"
   ## `id`* => "id
-  
+
   case node.kind:
   of nnkIdent:
     node.strVal
@@ -46,7 +46,7 @@ proc replacedIdents*(root: NimNode, targets, bys: openArray[NimNode]): NimNode =
   if root.kind == nnkIdent:
     for i, target in targets:
       if eqIdent(root, target):
-        return bys[i]
+        return bys[i] # FIXME
 
     root
 
@@ -138,3 +138,10 @@ func findPaths*(node: NimNode,
   fn: proc(node: NimNode): bool): seq[NodePath] {.inline.} =
 
   findPathsImpl node, fn, @[], result
+
+# ------------------------
+
+var c {.compileTime.} = 0
+proc genUniqId*(): string =
+  inc c
+  $c

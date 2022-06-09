@@ -1,14 +1,51 @@
-import std/[macros, tables, sugar, strutils]
+import std/[macros, tables, strutils]
 import macroplus
 import helper
 
+
+type AdapterInfo* = ref object
+  wrapperCode*: NimNode
+  loopPath*: NodePath
+  iterTypePaths*, yeildPaths*, loopIterPaths*, argsValuePaths*: seq[NodePath]
+
 # impl ------------------------------------------
 
-type
-  AdapterInfo* = ref object
-    wrapperCode*: NimNode
-    loopPath*: NodePath
-    iterTypePaths*, yeildPaths*, argsValuePaths*: seq[NodePath]
+proc fillAdapterInfoImpl(a: var AdapterInfo, path: var NodePath,
+    body: NimNode, itrType, loopName: NimNode) =
+
+  template goFurther: untyped =
+    fillAdapterInfoImpl a, path, ch, itrType, loopName
+
+  for i, ch in body:
+    path.add i
+    if ch.kind == nnkYieldStmt:
+      a.yeildPaths.add path
+
+    elif ch.eqIdent itrType:
+      a.iterTypePaths.add path
+
+    elif ch.eqIdent ident "it":
+      a.loopIterPaths.add path
+
+    elif ch.kind == nnkForStmt and eqIdent(ch[ForRange], loopName):
+      if a.loopPath == @[]:
+        a.loopPath = path
+        goFurther()
+
+      else:
+        err "there must be only one for loop over main iterable"
+
+    else:
+      goFurther()
+
+    path.del path.high
+
+proc fillAdapterInfo(avp: seq[NodePath], body: NimNode,
+  itrType, loopName: NimNode): AdapterInfo =
+
+  var path: NodePath
+  result = AdapterInfo(argsValuePaths: avp, wrapperCode: body)
+  fillAdapterInfoImpl result, path, body, itrType, loopName
 
 var customAdapters* {.compileTime.}: Table[string, AdapterInfo]
 
@@ -34,19 +71,8 @@ macro adapter*(iterDef): untyped =
     body.insert 0, argsDef
 
   let
-    adptr = AdapterInfo(
-      argsValuePaths: argsValuePathsAcc,
-      wrapperCode: body,
-      yeildPaths: findPaths(body, (n) => n.kind == nnkYieldStmt),
-      iterTypePaths: findPaths(body, (n) => n.eqIdent itrblId[IdentDefType]),
-      loopPath: (
-        let temp = findPaths(body,
-          (n) => n.kind == nnkForStmt and eqIdent(n[ForRange], itrblId[IdentDefName]))
-
-        assert temp.len == 1, "there must be only one for loop over main iterable"
-        temp[0]
-      ))
-
+    adptr = fillAdapterInfo(argsValuePathsAcc, body,
+      itrblId[IdentDefType], itrblId[IdentDefName])
     name = nimIdentNormalize getName iterdef[RoutineName]
     typename = block:
       let i = ident name & "Type"
