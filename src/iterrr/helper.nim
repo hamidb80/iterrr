@@ -1,4 +1,4 @@
-import std/[macros, sequtils]
+import std/[macros, sequtils, random]
 import macroplus
 
 type NodePath* = seq[int]
@@ -29,7 +29,7 @@ func getName*(node: NimNode): string =
   ## extracts the name for ident and exported ident
   ## `id` => "id"
   ## `id`* => "id
-  
+
   case node.kind:
   of nnkIdent:
     node.strVal
@@ -138,3 +138,9 @@ func findPaths*(node: NimNode,
   fn: proc(node: NimNode): bool): seq[NodePath] {.inline.} =
 
   findPathsImpl node, fn, @[], result
+
+# ------------------------
+
+proc genUniqId*(): string =
+  var rnd = initRand(1423431)
+  ( $ rnd.rand 0.0 .. 1.0)[2 .. ^1] # after dot
