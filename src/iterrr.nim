@@ -301,7 +301,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
                   `loopBody`
 
         wrappers.add:
-          let dtype = # speed optimzation for adptr who don't use generic type. like `cycle` and `flatten`
+          let dtype = # speed optimzation for adptrs who don't use generic type. like `cycle` and `flatten`
             if adptr.iterTypePaths.len == 0:
               newEmptyNode()
             else:

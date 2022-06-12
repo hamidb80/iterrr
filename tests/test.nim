@@ -122,11 +122,11 @@ suite "non-operator":
     check ("hello".items.iterrr filter(it != 'l').count()) == 3
     check iterrr("hello".items, filter(it != 'l').count()) == 3
 
-  # test "inplace reducer":
-  #   let prod = (3..6).iterrr reduce(1):
-  #     acc *= it
+  test "inplace reducer":
+    let prod = (3..6).iterrr reduce(1):
+      acc *= it
 
-  #   check prod == 3*4*5*6
+    check prod == 3*4*5*6
 
   test "each":
     var acc: seq[int]

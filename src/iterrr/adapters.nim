@@ -6,7 +6,7 @@ import helper
 type AdapterInfo* = ref object
   wrapperCode*: NimNode
   loopPath*: NodePath
-  iterTypePaths*, yeildPaths*, loopIterPaths*, argsValuePaths*: seq[NodePath]
+  iterTypePaths*, yeildPaths*, argsValuePaths*: seq[NodePath]
 
 # impl ------------------------------------------
 
@@ -23,9 +23,6 @@ proc fillAdapterInfoImpl(a: var AdapterInfo, path: var NodePath,
 
     elif ch.eqIdent itrType:
       a.iterTypePaths.add path
-
-    elif ch.eqIdent ident "it":
-      a.loopIterPaths.add path
 
     elif ch.kind == nnkForStmt and eqIdent(ch[ForRange], loopName):
       if a.loopPath == @[]:
