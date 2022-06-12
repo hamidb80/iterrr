@@ -47,7 +47,7 @@ func getIteratorIdents(call: NimNode): seq[NimNode] =
   ## map(x => ...) => @[x]
   ## map((x) => ...) => @[x]
   ## map((x, y) => ...) => @[x, y]
-  ## map[x](...) => @[x]err
+  ## map[x](...) => @[x]
   ## map[x, y](...) => @[x, y]
 
   if call[CallIdent].kind == nnkBracketExpr:

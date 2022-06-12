@@ -257,7 +257,9 @@ result:
 *see `tests`/`test.nim` for more.*
 
 **Define your custom adapter**:
-TODO; see `src`/`iterrr`/`adapters`.
+for now the name of loop iterator are limited to `it`.
+TODO; 
+see `src`/`iterrr`/`adapters`.
 
 
 ## Inspirations
@@ -306,6 +308,9 @@ you can send your donation to my [crypo wallets](https://github.com/hamidb80/ham
 improve existing code.
 
 ## Change Logs
+### `0.4.4` -> `0.4.5`:
+- add support for nested
+  
 ### `0.4.2` -> `0.4.4`:
 - add new adapters:
   - `window`
