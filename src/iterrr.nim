@@ -62,13 +62,14 @@ func getIteratorIdents(call: NimNode): seq[NimNode] =
     of nnkPar: @[args[0]]
     of nnkTupleConstr: args.children.toseq
     else:
+      debugEcho treeRepr args
       err "invalid custom ident style. got: " & $args.kind
 
   else:
     @[]
 
 func genBracketExprOf(id: NimNode, len: int): seq[NimNode] =
-  ## (`it`, 10) => [`it`[0[, `it`[1], `it`[2], ...]
+  ## (`it`, 10) => [`it`[0], `it`[1], `it`[2], ...]
   for i in 0 ..< len:
     result.add newTree(nnkBracketExpr, id, newIntLitNode i)
 
@@ -90,11 +91,12 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
         iteratorIdentAliases: getIteratorIdents n,
         expr: n[CallArgs[0]])
 
-    let caller = nimIdentNormalize:
-      if n[CallIdent].kind == nnkBracketExpr:
-        n[CallIdent][BracketExprIdent].strVal
-      else:
-        n[CallIdent].strVal
+    let
+      nc = n[CallIdent]
+      caller = nimIdentNormalize:
+        case nc.kind:
+        of nnkBracketExpr: nc[BracketExprIdent].strVal
+        else: nc.strVal
 
     case caller:
     of "map": addToCallChain hoMap
@@ -108,11 +110,9 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
       result.reducer = ReducerCall(
         caller: ident caller,
         params: n[CallArgs],
-
-        idents: if n[CallIdent].kind == nnkBracketExpr:
-            n[CallIdent][BracketExprParams]
-          else:
-            @[])
+        idents: case n[CallIdent].kind
+        of nnkBracketExpr: n[CallIdent][BracketExprParams]
+        else: @[])
 
     else:
       result.callChain.add HigherOrderCall(
@@ -122,7 +122,9 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
 
   assert hasReducer, "must set reducer"
 
-func detectTypeImpl(itrbl, iterIdent: NimNode, ttrfs: seq[TypeTransformer]): NimNode =
+func detectTypeImpl(itrbl, iterIdent: NimNode,
+  ttrfs: seq[TypeTransformer]): NimNode =
+
   var cursor = inlineQuote default(typeof(`itrbl`))
 
   for t in ttrfs:
@@ -135,17 +137,20 @@ func detectTypeImpl(itrbl, iterIdent: NimNode, ttrfs: seq[TypeTransformer]): Nim
         newCall ident"default":
           newCall(t.name &. "Type", cursor).add t.params
 
-      else: impossible
+      else: err "impossible"
 
   inlineQuote typeof(`cursor`)
 
-func detectType(itrbl, iterIdent: NimNode, callChain: seq[HigherOrderCall]): NimNode =
+func detectType(itrbl, iterIdent: NimNode,
+  callChain: seq[HigherOrderCall]): NimNode =
+
   detectTypeImpl itrbl, iterIdent:
     var temp: seq[TypeTransformer]
     for c in callChain:
       case c.kind:
       of hoMap:
-        temp.add TypeTransformer(kind: hoMap, expr: c.expr)
+        temp.add TypeTransformer(kind: hoMap,
+            expr: c.expr.replacedIteratorIdents(c.iteratorIdentAliases, iterIdent))
 
       of hoCustom:
         temp.add TypeTransformer(kind: hoCustom, name: c.name, params: c.params)
@@ -153,11 +158,6 @@ func detectType(itrbl, iterIdent: NimNode, callChain: seq[HigherOrderCall]): Nim
       else: discard
 
     temp
-
-func resolveIteratorAliases(ipack: var IterrrPack, iterIdent: NimNode) =
-  for c in ipack.callChain.mitems:
-    if c.kind != hoCustom:
-      c.expr = c.expr.replacedIteratorIdents(c.iteratorIdentAliases, iterIdent)
 
 proc resolveUniqIdents(node: NimNode, by: string) =
   ## appends `by` to every nnkAccQuote node recursively
@@ -167,14 +167,18 @@ proc resolveUniqIdents(node: NimNode, by: string) =
     else:
       resolveUniqIdents n, by
 
+func `or`[T](s1, s2: seq[T]): seq[T] =
+  case s1.len:
+  of 0: s2
+  else: s1
+
 proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     code: NimNode = nil): NimNode =
 
-  let uniqLoopIdent = ident "loopIdent_" & genUniqId()
+  let uniqLoopIdent = ident "li" & genUniqId()
 
   # var ipack = toIterrrPack inspect calls
   var ipack = toIterrrPack calls
-  resolveIteratorAliases ipack, uniqLoopIdent
 
   let
     hasCustomCode = code != nil
@@ -186,24 +190,6 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     reducerStateUpdaterProcIdent = ipack.reducer.caller
     reducerFinalizerProcIdent = ipack.reducer.caller &. "Finalizer"
     reducerInitProcIdent = ipack.reducer.caller &. "Init"
-    accDef =
-      if noAcc: newEmptyNode()
-
-      elif hasInplaceReducer:
-        let initialValue = ipack.reducer.params[0]
-        quote:
-          var `accIdent` = `initialValue`
-
-      else:
-        let
-          dtype = detectType(itrbl, uniqLoopIdent, ipack.callChain)
-          reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent,
-              dtype).newCall.add:
-            ipack.reducer.params
-
-        quote:
-          var `accIdent` = `reducerInitCall`
-
     accFinalizeCall =
       if hasInplaceReducer:
         if ipack.reducer.params.len == 2: # has finalizer
@@ -253,11 +239,29 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
           if not `reducerStateUpdaterProcIdent`(`accIdent`, `uniqLoopIdent`):
             break `mainLoopIdent`
 
+  var tmplts = newStmtList()
+  for i, call in ipack.callChain.mrpairs:
 
-  for i, call in ipack.callChain.rpairs:
     let p =
-      if call.kind == hoCustom: newEmptyNode()
-      else: call.expr
+      case call.kind:
+      of hoCustom: newEmptyNode()
+      else:
+        let
+          p = call.expr
+          tname = ident "iterrFn" & genUniqId()
+          args = (call.iteratorIdentAliases or @[ident "it"]).mapIt:
+            newIdentDefs(it, ident "untyped")
+
+        let ps = newNimNode(nnkPragma).add ident "dirty"
+        tmplts.add newProc(tname, @[ident "auto"] & args, p, nnkTemplateDef, ps)
+
+        call.expr = newCall(tname).add:
+          case args.len:
+          of 1: @[uniqLoopIdent]
+          else: genBracketExprOf(uniqLoopIdent, args.len)
+
+        call.expr
+
 
     loopBody = block:
       case call.kind:
@@ -312,6 +316,26 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         code.getNode(adptr.loopPath)[ForBody]
 
 
+  let accDef =
+    if noAcc: newEmptyNode()
+
+    elif hasInplaceReducer:
+      let initialValue = ipack.reducer.params[0]
+      quote:
+        var `accIdent` = `initialValue`
+
+    else:
+      let
+        dtype = detectType(itrbl, uniqLoopIdent, ipack.callChain)
+        reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent,
+            dtype).newCall.add:
+          ipack.reducer.params
+
+      quote:
+        var `accIdent` = `reducerInitCall`
+
+
+
   result = quote:
     for `uniqLoopIdent` in `itrbl`:
       `loopBody`
@@ -330,9 +354,12 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
   result = quote:
     block:
+      `tmplts`
       `accDef`
+
       block `mainLoopIdent`:
         `result`
+
       `accFinalizeCall`
 
 # main ---------------------------------------
