@@ -1,6 +1,10 @@
 import std/[unittest, sets, sequtils, strutils, math]
 import iterrr
 
+suite "simple":
+  test "map":
+    check ((1..5) !> map($it).toseq()) == @["1", "2", "3", "4", "5"]
+
 suite "main entities":
   test "maps":
     check (1..5) |>
@@ -30,12 +34,12 @@ suite "main entities":
     check "yes".items |> map((c, it)).do(inc c).toSeq() == @[(0, 'y'), (1, 'e'),
         (2, 's')]
 
-test "nested":
-  let r = @[@[1, 2], @[3, 4]].pairs |>
-    map[ia, a](
-      a.pairs |> map[ib, _]((ia, ib)).toseq()).toseq()
+# test "nested":
+#   let r = @[@[1, 2], @[3, 4]].pairs !>
+#     map[ia, a](
+#       a.pairs |> map[ib, _]((ia, ib)).toseq()).toseq()
 
-  check r == @[@[(0, 0), (0, 1)], @[(1, 0), (1, 1)]]
+#   check r == @[@[(0, 0), (0, 1)], @[(1, 0), (1, 1)]]
 
 suite "custom ident :: []":
   test "1":

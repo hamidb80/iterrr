@@ -68,7 +68,7 @@ func getIteratorIdents(call: NimNode): seq[NimNode] =
     @[]
 
 func genBracketExprOf(id: NimNode, len: int): seq[NimNode] =
-  ## (`it`, 10) => [`it`[0[, `it`[1], `it`[2], ...]
+  ## (`it`, 10) => [`it`[0], `it`[1], `it`[2], ...]
   for i in 0 ..< len:
     result.add newTree(nnkBracketExpr, id, newIntLitNode i)
 
@@ -91,7 +91,8 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
         expr: n[CallArgs[0]])
 
     let caller = nimIdentNormalize:
-      if n[CallIdent].kind == nnkBracketExpr:
+      case n[CallIdent].kind:
+      of nnkBracketExpr:
         n[CallIdent][BracketExprIdent].strVal
       else:
         n[CallIdent].strVal
@@ -108,11 +109,9 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
       result.reducer = ReducerCall(
         caller: ident caller,
         params: n[CallArgs],
-
-        idents: if n[CallIdent].kind == nnkBracketExpr:
-            n[CallIdent][BracketExprParams]
-          else:
-            @[])
+        idents: case n[CallIdent].kind
+        of nnkBracketExpr: n[CallIdent][BracketExprParams]
+        else: @[])
 
     else:
       result.callChain.add HigherOrderCall(
@@ -143,13 +142,14 @@ func detectTypeImpl(itrbl, iterIdent: NimNode,
 
 func detectType(itrbl, iterIdent: NimNode,
   callChain: seq[HigherOrderCall]): NimNode =
-  
+
   detectTypeImpl itrbl, iterIdent:
     var temp: seq[TypeTransformer]
     for c in callChain:
       case c.kind:
       of hoMap:
-        temp.add TypeTransformer(kind: hoMap, expr: c.expr)
+        temp.add TypeTransformer(kind: hoMap,
+            expr: c.expr.replacedIteratorIdents(c.iteratorIdentAliases, iterIdent))
 
       of hoCustom:
         temp.add TypeTransformer(kind: hoCustom, name: c.name, params: c.params)
@@ -157,11 +157,6 @@ func detectType(itrbl, iterIdent: NimNode,
       else: discard
 
     temp
-
-func resolveIteratorAliases(ipack: var IterrrPack, iterIdent: NimNode) =
-  for c in ipack.callChain.mitems:
-    if c.kind != hoCustom:
-      c.expr = c.expr.replacedIteratorIdents(c.iteratorIdentAliases, iterIdent)
 
 proc resolveUniqIdents(node: NimNode, by: string) =
   ## appends `by` to every nnkAccQuote node recursively
@@ -171,6 +166,11 @@ proc resolveUniqIdents(node: NimNode, by: string) =
     else:
       resolveUniqIdents n, by
 
+func `or`[T](s1, s2: seq[T]): seq[T] =
+  case s1.len:
+  of 0: s2
+  else: s1
+
 proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     code: NimNode = nil): NimNode =
 
@@ -178,7 +178,6 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
   # var ipack = toIterrrPack inspect calls
   var ipack = toIterrrPack calls
-  resolveIteratorAliases ipack, uniqLoopIdent
 
   let
     hasCustomCode = code != nil
@@ -257,11 +256,27 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
           if not `reducerStateUpdaterProcIdent`(`accIdent`, `uniqLoopIdent`):
             break `mainLoopIdent`
 
-
+  var tmplts = newStmtList()
   for i, call in ipack.callChain.rpairs:
-    let p = case call.kind:
+    # add template with custom args
+
+    let p =
+      case call.kind:
       of hoCustom: newEmptyNode()
-      else: call.expr
+      else:
+        let
+          p = call.expr
+          tname = ident "das" & genUniqId()
+          args = (call.iteratorIdentAliases or @[ident "it"]).mapIt:
+            newIdentDefs(it, ident "untyped")
+
+        tmplts.add newProc(tname, @[ident "untyped"] & args, p, nnkTemplateDef)
+
+        newCall(tname).add:
+          case args.len:
+          of 1: @[uniqLoopIdent]
+          else: genBracketExprOf(uniqLoopIdent, args.len)
+
 
     loopBody = block:
       case call.kind:
@@ -334,9 +349,12 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
   result = quote:
     block:
+      `tmplts`
       `accDef`
+
       block `mainLoopIdent`:
         `result`
+
       `accFinalizeCall`
 
 # main ---------------------------------------
