@@ -1,4 +1,4 @@
-import std/[macros, sequtils]
+import std/[macros, sequtils, strformat]
 import macroplus
 
 type NodePath* = seq[int]
@@ -84,7 +84,7 @@ proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
     dotExprJob n[CallIdent][0], n[CallIdent][1], n[CallArgs]
 
   else:
-    err "invalid caller"
+    err fmt"invalid caller {n[CallIdent].kind}"
 
 proc flattenNestedDotExprCall*(n: NimNode): seq[NimNode] {.inline.} =
   ## imap[T](1).ifilter(2).imax()

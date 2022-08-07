@@ -1,9 +1,6 @@
 import std/[unittest, sets, sequtils, strutils, math]
 import iterrr
 
-suite "simple":
-  test "map":
-    check ((1..5) !> map($it).toseq()) == @["1", "2", "3", "4", "5"]
 
 suite "main entities":
   test "maps":
@@ -34,12 +31,17 @@ suite "main entities":
     check "yes".items |> map((c, it)).do(inc c).toSeq() == @[(0, 'y'), (1, 'e'),
         (2, 's')]
 
-# test "nested":
-#   let r = @[@[1, 2], @[3, 4]].pairs !>
-#     map[ia, a](
-#       a.pairs |> map[ib, _]((ia, ib)).toseq()).toseq()
+suite "nest":
+  let matrix = @[
+    @[1, 2],
+    @[3, 4]
+  ]
 
-#   check r == @[@[(0, 0), (0, 1)], @[(1, 0), (1, 1)]]
+  test "nested with different idents":
+    let r = matrix.pairs |> map[ia, a]((
+      a.pairs |> map[ib, _]((ia, ib)).toseq())).toseq()
+
+    check r == @[@[(0, 0), (0, 1)], @[(1, 0), (1, 1)]]
 
 suite "custom ident :: []":
   test "1":
@@ -230,7 +232,7 @@ suite "adapters":
 
   test "window":
     let acc = (1..5) |> window(3).toseq()
-    check acc.mapIt(it.toseq) ==  @[@[1, 2, 3], @[2, 3, 4], @[3, 4, 5]]
+    check acc.mapIt(it.toseq) == @[@[1, 2, 3], @[2, 3, 4], @[3, 4, 5]]
 
   test "mix":
     check matrix.items |> flatten().map(-it).cycle(11).group(4).toseq() == @[
