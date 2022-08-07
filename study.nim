@@ -10,7 +10,7 @@ conclusion """
 """
 
 study "map.[reducer]":
-  Iter >< map(Op).reducer(Default)
+  Iter |> map(Op).reducer(Default)
 
   DetectedType: # <- means replace with
     it <- default(typeof Iter)
@@ -29,7 +29,7 @@ study "map.[reducer]":
           break mainLoop
 
 study "filter.[reducer]":
-  Iter >< filter(Cond).reducer(Default)
+  Iter |> filter(Cond).reducer(Default)
 
   for it in Iter:
     if Cond:
@@ -39,8 +39,6 @@ study "adapter":
   template loop(itrbl, code): untyped {.fake.} =
     for it {.inject.} in itrbl:
       code
-
-  # --------------------------------------------------
 
   iterator cycle(itrbl: Iter; limit: int): Iter {.adapter.} =
     var c = 0

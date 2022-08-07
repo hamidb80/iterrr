@@ -8,9 +8,6 @@ type NodePath* = seq[int]
 template err*(msg): untyped =
   raise newException(ValueError, msg)
 
-template impossible*: untyped =
-  err "imposible"
-
 # common utilities ------------------------
 
 func last*[T](s: seq[T]): T {.inline.} =

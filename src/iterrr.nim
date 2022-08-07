@@ -122,7 +122,9 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
 
   assert hasReducer, "must set reducer"
 
-func detectTypeImpl(itrbl, iterIdent: NimNode, ttrfs: seq[TypeTransformer]): NimNode =
+func detectTypeImpl(itrbl, iterIdent: NimNode,
+  ttrfs: seq[TypeTransformer]): NimNode =
+
   var cursor = inlineQuote default(typeof(`itrbl`))
 
   for t in ttrfs:
@@ -135,11 +137,13 @@ func detectTypeImpl(itrbl, iterIdent: NimNode, ttrfs: seq[TypeTransformer]): Nim
         newCall ident"default":
           newCall(t.name &. "Type", cursor).add t.params
 
-      else: impossible
+      else: err "impossible"
 
   inlineQuote typeof(`cursor`)
 
-func detectType(itrbl, iterIdent: NimNode, callChain: seq[HigherOrderCall]): NimNode =
+func detectType(itrbl, iterIdent: NimNode,
+  callChain: seq[HigherOrderCall]): NimNode =
+  
   detectTypeImpl itrbl, iterIdent:
     var temp: seq[TypeTransformer]
     for c in callChain:
@@ -255,8 +259,8 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
 
   for i, call in ipack.callChain.rpairs:
-    let p =
-      if call.kind == hoCustom: newEmptyNode()
+    let p = case call.kind:
+      of hoCustom: newEmptyNode()
       else: call.expr
 
     loopBody = block:
