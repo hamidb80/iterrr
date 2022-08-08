@@ -3,6 +3,8 @@ iterate faster ... 🏎️.
 Write higher-order functions, get its imperative style at the compile time!
 
 ## The Problem
+TODO update the doc - were using temaplates now 
+
 ِDeclarative programming is good, right? 
 
 Instead of
@@ -277,21 +279,6 @@ while being better at:
   2. using less meta programming
 
 and it also has smaller core.
-
-### `iterrr` VS `collect` from `std/suger`:
-you can use `iterrr` instead of `collect`. 
-you don't miss anything.
-
-### Is it a replacement for `itertools`?
-not really, you can use them both together.
-`itertools` has lots of useful iterators.
-
-## Wanna Contribute?
-**here are some suggestion:**
-
-* add benchmark
-  1. `iterrr` VS `std/sequtils` VS `zero_functional`
-  2. compare to other languages like Rust, Go, Haskell, ...
 
 
 ## With Special Thanks To:
