@@ -6,6 +6,7 @@ export reducers, iterators, adapters
 
 # FIXME correct param & args names
 # TODO add debugging for adapter and debug flag
+# TODO use templates for custom reducer too
 
 # type def ------------------------------------------
 
