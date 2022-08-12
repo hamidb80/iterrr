@@ -215,24 +215,6 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
       else:
         ident "iterrrAcc" & genUniqId()
 
-    accDef =
-      if hasCustomCode: newEmptyNode()
-
-      elif hasCustomReducer:
-        let initialValue = ipack.reducer.params[1][1] # TODO EqExprEq
-        quote:
-          var `accIdent` = `initialValue`
-
-      else:
-        let
-          dtype = detectType(itrbl, uniqLoopIdent, ipack.callChain)
-          reducerInitCall =
-            newTree(nnkBracketExpr, reducerIdent.initIdent, dtype).newCall.add:
-            ipack.reducer.params
-
-        quote:
-          var `accIdent` = `reducerInitCall`
-
     accFinalizeCall =
       if hasCustomCode: newEmptyNode()
 
@@ -284,7 +266,8 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
         tmplts.add newDirtyTemplate(tname, args, body)
 
-        makeAliasCallWith(tname, args, uniqLoopIdent)
+        call.expr = makeAliasCallWith(tname, args, uniqLoopIdent) # to reduce boilder plate of generic type in `accDef`
+        call.expr
 
     loopBody = block:
       case call.kind:
@@ -336,6 +319,25 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
           (code, dtype, call.params, adptr)
 
         code.getNode(adptr.loopPath)[ForBody]
+
+  
+  let accDef =
+    if hasCustomCode: newEmptyNode()
+
+    elif hasCustomReducer:
+      let initialValue = ipack.reducer.params[1][1] # TODO EqExprEq
+      quote:
+        var `accIdent` = `initialValue`
+
+    else:
+      let
+        dtype = detectType(itrbl, uniqLoopIdent, ipack.callChain)
+        reducerInitCall =
+          newTree(nnkBracketExpr, reducerIdent.initIdent, dtype).newCall.add:
+          ipack.reducer.params
+
+      quote:
+        var `accIdent` = `reducerInitCall`
 
 
   result = quote:
