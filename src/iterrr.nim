@@ -48,13 +48,8 @@ func getIteratorIdents(call: NimNode): seq[NimNode] =
   ## map(x => ...) => @[x]
   ## map((x) => ...) => @[x]
   ## map((x, y) => ...) => @[x, y]
-  ## map[x](...) => @[x]
-  ## map[x, y](...) => @[x, y]
 
-  if call[CallIdent].kind == nnkBracketExpr:
-    call[CallIdent][BracketExprParams]
-
-  elif call[1].matchInfix "=>":
+  if call[1].matchInfix "=>": # TODO turn it to function
     let args = call[1][InfixLeftSide]
     call[1] = call[1][InfixRightSide]
 
@@ -66,11 +61,10 @@ func getIteratorIdents(call: NimNode): seq[NimNode] =
       debugEcho treeRepr args
       err "invalid custom ident style. got: " & $args.kind
 
-  else:
-    @[]
+  else: @[]
 
 func genBracketExprOf(id: NimNode, len: int): seq[NimNode] =
-  ## (`it`, 10) => [`it`[0], `it`[1], `it`[2], ...]
+  ## (`it`, 2) => [`it`[0], `it`[1], `it`[2]]
   for i in 0 ..< len:
     result.add newTree(nnkBracketExpr, id, newIntLitNode i)
 
@@ -94,10 +88,7 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
 
     let
       nc = n[CallIdent]
-      caller = nimIdentNormalize:
-        case nc.kind:
-        of nnkBracketExpr: nc[BracketExprIdent].strVal
-        else: nc.strVal
+      caller = nc.strVal
 
     case caller:
     of "map": addToCallChain hoMap
@@ -111,9 +102,7 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
       result.reducer = ReducerCall(
         caller: ident caller,
         params: n[CallArgs],
-        idents: case n[CallIdent].kind
-        of nnkBracketExpr: n[CallIdent][BracketExprParams]
-        else: @[])
+        idents: @[])
 
     else:
       result.callChain.add HigherOrderCall(
@@ -168,31 +157,28 @@ proc resolveUniqIdents(node: NimNode, by: string) =
     else:
       resolveUniqIdents n, by
 
-func `or`[T](s1, s2: seq[T]): seq[T] =
-  case s1.len:
-  of 0: s2
-  else: s1
+func finalizerIdent(n: NimNode): NimNode = n &. "Finalizer"
+func initIdent(n: NimNode): NimNode = n &. "Init"
 
 proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     code: NimNode = nil): NimNode =
 
-  let uniqLoopIdent = ident "li" & genUniqId()
-
-  # var ipack = toIterrrPack inspect calls
-  var ipack = toIterrrPack calls
+  var
+    ipack = toIterrrPack calls
+    tmplts = newStmtList()
 
   let
-    hasCustomCode = code != nil
-    noAcc = hasCustomCode and eqident(ipack.reducer.caller, "each")
-    hasInplaceReducer = eqident(ipack.reducer.caller, "reduce")
-
-    accIdent = ident "acc"
     mainLoopIdent = ident "mainLoop"
-    reducerStateUpdaterProcIdent = ipack.reducer.caller
-    reducerFinalizerProcIdent = ipack.reducer.caller &. "Finalizer"
-    reducerInitProcIdent = ipack.reducer.caller &. "Init"
-    accFinalizeCall =
-      if hasInplaceReducer:
+    accIdent = ident "acc"
+    uniqLoopIdent = ident "li" & genUniqId()
+    reducerFnIdent = ipack.reducer.caller
+
+    hasCustomCode = code != nil
+    noAcc = hasCustomCode and ipack.reducer.caller ~= "each"
+    hasCustomReducer = ipack.reducer.caller ~= "reduce"
+
+    accFinalizeCall =                     # TODO turn it to function
+      if hasCustomReducer:
         if ipack.reducer.params.len == 2: # has finalizer
           if ipack.reducer.idents.len == 2:
             ipack.reducer.params[1].replacedIdent(ipack.reducer.idents[0], accIdent)
@@ -203,7 +189,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
       elif noAcc:
         newEmptyNode()
       else:
-        newCall(reducerFinalizerProcIdent, accIdent)
+        newCall(reducerFnIdent.finalizerIdent, accIdent)
 
   var
     wrappers: seq[tuple[code: NimNode, dtype: NimNode, params: seq[NimNode],
@@ -213,7 +199,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
       if noAcc:
         code.replacedIteratorIdents(ipack.reducer.params, uniqLoopIdent)
 
-      elif hasInplaceReducer:
+      elif hasCustomReducer:
         if ipack.reducer.idents.len == 2:
           let k = ipack.reducer.idents[1].kind
 
@@ -237,12 +223,10 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
       else:
         quote:
-          if not `reducerStateUpdaterProcIdent`(`accIdent`, `uniqLoopIdent`):
+          if not `reducerFnIdent`(`accIdent`, `uniqLoopIdent`):
             break `mainLoopIdent`
 
-  var tmplts = newStmtList()
   for i, call in ipack.callChain.mrpairs:
-
     let p =
       case call.kind:
       of hoCustom: newEmptyNode()
@@ -253,8 +237,9 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
           args = (call.iteratorIdentAliases or @[ident "it"]).mapIt:
             newIdentDefs(it, ident "untyped")
 
+        ## TODO turn it to function
         let ps = newNimNode(nnkPragma).add ident "dirty"
-        tmplts.add newProc(tname, @[ident "auto"] & args, p, nnkTemplateDef, ps)
+        tmplts.add newProc(tname, @[ident "untyped"] & args, p, nnkTemplateDef, ps)
 
         call.expr = newCall(tname).add:
           case args.len:
@@ -262,7 +247,6 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
           else: genBracketExprOf(uniqLoopIdent, args.len)
 
         call.expr
-
 
     loopBody = block:
       case call.kind:
@@ -297,8 +281,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
           code.replaceNode yp:
             let yval = code.getNode(yp)[0]
 
-            if eqIdent(yval, ident"it"):
-              loopBody
+            if yval ~= "it": loopBody
             else:
               quote:
                 block:
@@ -320,7 +303,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
   let accDef =
     if noAcc: newEmptyNode()
 
-    elif hasInplaceReducer:
+    elif hasCustomReducer:
       let initialValue = ipack.reducer.params[0]
       quote:
         var `accIdent` = `initialValue`
@@ -328,13 +311,12 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     else:
       let
         dtype = detectType(itrbl, uniqLoopIdent, ipack.callChain)
-        reducerInitCall = newTree(nnkBracketExpr, reducerInitProcIdent,
-            dtype).newCall.add:
+        reducerInitCall =
+          newTree(nnkBracketExpr, reducerFnIdent.initIdent, dtype).newCall.add:
           ipack.reducer.params
 
       quote:
         var `accIdent` = `reducerInitCall`
-
 
 
   result = quote:
@@ -389,4 +371,3 @@ macro `|>`*(itrbl, body, code): untyped =
 #   echo repr(itrbl), " !> ", repr(body), ":\n", indent(repr code, 4)
 #   echo "#]"
 #   footer
-
