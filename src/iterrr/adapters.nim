@@ -1,6 +1,6 @@
 import std/[macros, tables, strutils]
 import macroplus
-import helper
+import helpers
 
 
 type AdapterInfo* = ref object

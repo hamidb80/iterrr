@@ -8,11 +8,6 @@ type NodePath* = seq[int]
 template err*(msg): untyped =
   raise newException(ValueError, msg)
 
-# common utilities ------------------------
-
-func last*[T](s: seq[T]): T {.inline.} =
-  s[s.high]
-
 # meta programming stuff ------------------
 
 func `&.`*(id: NimNode, str: string): NimNode =
@@ -21,6 +16,17 @@ func `&.`*(id: NimNode, str: string): NimNode =
   of nnkIdent: ident id.strVal & str
   of nnkAccQuoted: id[0] &. str
   else: err "exptected nnkIdent or nnkAccQuoted but got " & $id.kind
+
+template `~=`*(id1, id2): untyped = 
+  eqIdent(id1, id2)
+
+template expect*(expr, msg): untyped = 
+  doAssert expr, msg
+
+func `or`*[T](s1, s2: seq[T]): seq[T] =
+  case s1.len:
+  of 0: s2
+  else: s1
 
 func getName*(node: NimNode): string =
   ## extracts the name for ident and exported ident
@@ -54,6 +60,7 @@ proc replacedIdents*(root: NimNode, targets, bys: openArray[NimNode]): NimNode =
 proc replacedIdent*(root: NimNode, target, by: NimNode): NimNode {.inline.} =
   replacedIdents(root, [target], [by])
 
+
 proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
   expectKind n, nnkCall
 
@@ -65,21 +72,6 @@ proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
   of nnkIdent:
     acc.add n
 
-  of nnkBracketExpr:
-    case n[CallIdent][BracketExprIdent].kind:
-    of nnkIdent:
-      acc.add n
-
-    of nnkDotExpr:
-      dotExprJob(
-        n[CallIdent][BracketExprIdent][0],
-        newTree(nnkBracketExpr, n[CallIdent][BracketExprIdent][1]).add(n[
-            CallIdent][BracketExprParams]),
-        n[CallArgs])
-
-    else:
-      err "no"
-
   of nnkDotExpr:
     dotExprJob n[CallIdent][0], n[CallIdent][1], n[CallArgs]
 
@@ -87,23 +79,31 @@ proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
     err fmt"invalid caller {n[CallIdent].kind}"
 
 proc flattenNestedDotExprCall*(n: NimNode): seq[NimNode] {.inline.} =
-  ## imap[T](1).ifilter(2).imax()
+  ## map(1).filter(2).map()
+  ## 
+  ## Call
+  ##   DotExpr
+  ##     Call
+  ##       DotExpr
+  ##         Call
+  ##           Ident "map"
+  ##           IntLit 1
+  ##         Ident "filter"
+  ##       IntLit 2
+  ##     Ident "map"
   ##
   ## converts to >>>
   ##
   ## Call
-  ##   BracketExpr
-  ##     Ident "imap"
-  ##     Ident "T"
+  ##   Ident "map"
   ##   IntLit 1
   ## Call
-  ##   Ident "ifilter"
+  ##   Ident "filter"
   ##   IntLit 2
   ## Call
-  ##   Ident "imax"
+  ##   Ident "map"
 
   flattenNestedDotExprCallImpl n, result
-
 
 func getNode*(node: NimNode, path: NodePath): NimNode =
   result = node

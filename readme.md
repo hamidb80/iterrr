@@ -3,94 +3,79 @@ iterate faster ... 🏎️.
 Write higher-order functions, get its imperative style at the compile time!
 
 ## The Problem
-TODO update the doc - were using temaplates now 
+The problem is that writing a full nested loop is a boring task, and using clojure iterators slows down the speed.
 
-ِDeclarative programming is good, right? 
+(`std/sequtils` is a nightmare, [iterutils](https://github.com/def-/nim-iterutils) is slightly better, but can we go faster? )
 
-Instead of
-```nim
-var result: seq[int]
-
-for it in list:
-  if it mod 2 == 0:
-    result.add it * 2
-```
-
-You can easily write:
-```nim
-list.filterIt(it mod 2 == 0).mapIt(it * 2)
-```
-Which is a lot cleaner.
-
-`std/sequtils` already gives you that power. but there is another problem; it creates intermediate `seq`s. as you may know, in some functional programming languages like Haskell, the result of these higher-order funcions, are not evaluated until they are needed. [it's called **lazy evaluation**]
-
-In other words, there is no intermediate `seq`s.
-
-Actually, the latter code[using `std/sequtils`] is not equal to the first one. actually it is almost equal to:
-```nim
-var result1: seq[int]
-for it in list:
-  if it mod 2 == 0:
-    result1.add it
-
-var result2: seq[int]
-for it in result1:
-  result2.add it * 2
-
-result2 # do whatever you want with the final result
-```
-
-Another problem with `std/seqtutils` is that you have to convert your iterable to `seq` before using it with `filterIt`/`mapIt`/`...`
-```nim
-(1..20).filterIt(it > 5) # doesn't work
-(1..20).toseq.filterIt(it > 5) # works fine
-```
-Which can be quite expensive(time/resource consuming) task.
+**The real question is:** "Can meta-programming help us?"
 
 ## The Solution
-`iterrr` uses the ultimate power of meta programming to bring you the what you just have wished.
+`iterrr` uses the *ultimate* power of meta-programming to bring you what you've just wished.
 
-**by writing this:**
-```nim
-(1..20) |> filter(it > 5).map(it * 2).toSeq()
+
+## example of generated code
 ```
-**you get this:**
-```nim
-var acc = toSeqInit[typeof(default(typeof(1..20)) * 2)]()
+import std/sets, iterrr
 
-block mainLoop:
-  for it in (1..20):
-    if it > 5:
-      block:
-        let it = it * 2
-        if not toSeq(acc, it):
-          break mainLoop
+let 
+  numbers = @[1, -4, 5, 7,  -13, 14, 6, 4, 16, 9, -12]
+  c = 7
 
-toSeqFinalizer acc
+let neighbours = numbers.items |> 
+  filter(abs(it - c) < 4)
+  .map(abs(it - c))
+  .toHashSet()
+
+echo neighbours
 ```
 
-it's not as clean as hand-written code, but it's good enough.
+```nim
+block:
+  template iterrrFn3(it: untyped): untyped {.dirty.} =
+    abs(it - c)
+
+  template iterrrFn4(it: untyped): untyped {.dirty.} =
+    abs(it - c) < 4
+
+  var iterrrAcc2 = toHashSetInit[typeof(iterrrFn3(default(typeof(numbers.items))))]()
+  block mainLoop:
+    for li1 in numbers.items:
+      if iterrrFn4(li1):
+        block:
+          let li1 = iterrrFn3(li1)
+          if not toHashSetUpdate(iterrrAcc2, li1):
+            break mainLoop
+  toHashSetFinalizer(iterrrAcc2)
+```
 
 ## Usage
-### syntax
-use `|>` for normal.
-and `!>` for debug mode.
 
-**here's the pattern**
+### complete syntax
+**There is 3 type of usage:**
 ```nim
-iterable |> entity1(code).entity2(code)...reducer(args...)
+# predefined reducer
+iterable |> entity1(_).entity2(_)...Reducer()
+
+# custom reducer
+iterable |> entity1(_).entity2(_)...reduce(loopIdents, accIdent = initial_value, [Finalizer]):
+  # update accIdent
+
+# custom code
+iterable |> entity1(_).entity2(_)...each(loopIdents):
+  # do with loopIdents
 ```
 
 ### Main Entities:
 1. **map** :: similar to `mapIt` from `std/sequtils`
 2. **filter** :: similar to `filterIt` from `std/sequtils`
 3. **breakif** :: similar to `takeWhile` in functional programming languages but negative.
-4. **do** :: does something.
-5. **[reducer]**
+4. **with** :: inserts custom code
 
+#### 1. predefined reducer
 **NOTE:** you can chain as many `map`/`filter`/... as you want in any order, but there is **only one** reducer.
 
-you can use other reducers, such as:
+
+**There are some predefined reducers in iterrr library:**
 * `toSeq` :: stores elements into a `seq`
 * `count` :: counts elements
 * `sum` :: calculates summation
@@ -102,9 +87,7 @@ you can use other reducers, such as:
 * `all` :: similar to `all` from `std/sequtils`
 * `toHashSet` :: stores elements into a `HashSet`
 * `strJoin` :: similar to `join` from `std/strutils`
-* **[your custom reducer!]**
-
-**NOTE**: see usage in `tests/test.nim`
+* `toCountTable` :: similar to `toCountTable` from `std/tables`
 
 here's how you can get maximum x, when `flatPoints` is: `[x0, y0, x1, y1, x2, y2, ...]`
 ```nim
@@ -113,7 +96,7 @@ let xmax = flatPoints.pairs |> filter(it[0] mod 2 == 0).map(it[1]).max()
 let xmax = countup(0, flatPoints.high, 2) |> map(flatPoints[it]).max()
 ```
 
-did you noticed that I've just used iterators?
+**NOTE**: see more examples in `tests/test.nim`
 
 ### Custom Idents ?!?
 using just `it` in `mapIt` and `filterIt` is just ... and makes code a little unreadable.
@@ -123,30 +106,26 @@ using just `it` in `mapIt` and `filterIt` is just ... and makes code a little un
 2. if there was only 1 custom ident, the custom ident is replaced with `it`
 3. if there was more than 1 custom idents, `it` is unpacked 
 
-**I mean**:  
+**Here's some examples**:  
 ```nim
 (1..10) |> map( _ ) # "it" is available inside the "map"
-
-## bracket style
-(1..10) |> map[n]( _ ) # "n" is replaced with "it"
-(1..10) |> map[a1, a2, ...]( _ ) # "a1" is replaced with it[0], "a2" is replaced with it[1], ...
-
-## infix style
 (1..10) |> map(n => _ )
+(1..10) |> map((n) => _ )
 (1..10) |> map((a1, a2, ...) => _ )
+(1..10) |> each((a1, a2, ...) => _ )
+(1..10) |> reduce((a1, a2, ...), acc = 2):
+  ...
 ```
 
 **example**:
 ```nim
-"hello".pairs |> filter[indx, c](indx > 2).map[_, c](ord c)
+"hello".pairs |> filter((i, c) => i > 2).map((_, c) => ord c)
 ```
-Yes, you can do it!
-
 
 ### Limitation
 you have to specify the iterator for `seq` and other iterable objects [`HSlice` is an exception]
 
-i mean:
+**example:**
 ```nim
 let s = [1, 2, 3]
 echo s |> map($it) # doesn't work
@@ -154,38 +133,36 @@ echo s.items |> map($it) # works fine
 echo s.pairs |> map($it) # works fine
 ```
 
-### Define A Custom Reducer
+### Define Your Reducer!
 **every reducer have**: [let't name our custom reducer `zzz`]
 1. `zzzInit[T](args...): ...` :: initializes the value of accumulator(state) :: must be *generic*.
-2. `zzz(var acc, newValue): bool` :: updates the accumulator based on `newValue`, if returns false, the iteration stops.
+2. `zzzUpdate(var acc, newValue): bool` :: updates the accumulator based on `newValue`, if returns false, the iteration stops.
 3. `zzzFinalizer(n): ...` :: returns the result of the accumulator.
 
 **NOTE**: see implementations in `src/iterrr/reducers.nim`
 
-### Inplace Reducer
+### Custom Reducer
 **pattern**:
 ```nim
-ITER |> ...reduce[acc, a](initialState, [finalizer]):
-   acc = ...
+ITER |> ...reduce(idents, acc = initial_value, [finalizer]): 
+   update acc here 
 ```
 
-**example**:
+**Notes**:
+- acc can be any ident like `result` or `answer`, ... 
+- **Finalizer**:
+  - it's optional
+  - it's an experssion inside of it you have access to the `acc` ident
+  - the default finalizer is `acc` ident 
+
+**Example of searching for a number**:
 ```nim
-## default idents, acc & it
-let summ = (1..10) |> reduce(0):
-  acc += it
-
-## custom idents without finalizer
-let summ = (1..10) |> reduce[acc, n](0):
-  acc += n
-
-## custom idents + finalizer
-let summ2 = (1..10) |> reduce[acc, n](0, acc * 2):
-  acc += n
-
-(1..10) |> reduce[acc, (n1, n2, ...)](...):
-  ...
+let element = (1..10) |> reduce(it, answer = none int, answer.get):
+  if your_condition(it):
+    answer = some MyNumber
+    break mainLoop
 ```
+**Note**: if the item has not found, raises `UnpackDefect` error as result of `get` function  in finalizer `answer.get`.
 
 ### Don't Wanna Use Reducer?
 > My view is that a lot of the time in Nim when you're doing filter or map you're just going to operate it on afterwards
@@ -196,36 +173,17 @@ you can do it with `each(arg1, arg2,...)`. [arguments semantic is the same as cu
 ```nim
 (1..10) |> filter(it in 3..5).each(num):
   echo num
+  if num < 7:
+    break mainLoop
 ```
 
-### Non Operator Version
-you can use `iterrr` instead of `|>` operator.
-
-**example**:
-```nim
-## inline
-"hello".items.iterrr filter(it != 'l').count()
-# or
-iterrr "hello".items, filter(it != 'l').count()
-
-## multi line
-iterrr "hello".items: # or "hello".items.iterrr:
-  map(...)
-  filter(...)
-  reduce[result, num](0):
-    ...
-
-## hey but you can use good ol' `|>`
-"hello".items |> # or "hello".items.iterrr:
-  map(...).
-  filter(...).
-  reduce[result, num](0):
-    ...
-
-```
+**Note**: `mainLoop` is the main loop block
 
 ### Custom Adapter
-**Note:** adapters are like dirty templates, you have to import the dependencies of adapters in order to use them.
+adapters are inspired from implmentation of iterators in Nim.
+TODO: explain more
+
+**Limitations**: you have to import the dependencies of adapters in order to use them.
 
 **Built-in adapter**:
 - `group`
@@ -244,7 +202,6 @@ let matrix = [
   [4, 5, 6],
   [7, 8, 9]
 ]
-
 matrix.items |> flatten().map(-it).cycle(11).group(4).toseq()
 ```
 result:
@@ -263,6 +220,13 @@ for now the name of loop iterator are limited to `it`.
 TODO; 
 see `src`/`iterrr`/`adapters`.
 
+## Debugging
+use `-d:iterrrDebug` flag to see generated code.
+
+## Breaking changes
+### `0.x` -> `1.x`:
+- using brackets for defining custom idents is no longer supported.
+
 
 ## Inspirations
 1. [zero_functional](https://github.com/zero-functional/zero-functional)
@@ -273,17 +237,8 @@ see `src`/`iterrr`/`adapters`.
 
 ## Common Questions:
 ### `iterrr` VS `zero_functional`:
-`iterrr` targets the same problem as `zero_functional`, 
-while being better at:
-  1. extensibility
-  2. using less meta programming
+`iterrr` targets the same problem as `zero_functional`, while being better at  *extensibility*.
 
-and it also has smaller core.
-
-
-## With Special Thanks To:
-* [@beef331](https://github.com/beef331): who helped me a lot in my Nim journey
-
-## Foot Notes
-> writing a macro is kind of addicting...
+## Quotes
+> writing macro is kind of addicting...
 :: [PMunch](https://github.com/PMunch/)
