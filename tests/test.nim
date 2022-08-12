@@ -34,8 +34,7 @@ suite "main entities":
 suite "nest":
   let matrix = @[
     @[1, 2],
-    @[3, 4]
-  ]
+    @[3, 4]]
 
   test "nested with different idents":
     let r = matrix.pairs |> map((ia, a) => (
@@ -43,7 +42,10 @@ suite "nest":
 
     check r == @[@[(0, 0), (0, 1)], @[(1, 0), (1, 1)]]
 
-suite "custom ident :: =>":
+suite "ident":
+  test "no ident":
+    check (1..10) |> filter(it in 3..5).toSeq() == @[3, 4, 5]
+
   test "single":
     check (1..10) |> filter(n => n in 3..5).toSeq() == @[3, 4, 5]
 
@@ -53,14 +55,31 @@ suite "custom ident :: =>":
   test "multi":
     check "hello".pairs |> map((idx, c) => c).toSeq() == toseq "hello".toseq
 
-suite "custom ident :: reduce":
-  test "1":
+suite "custom code (AKA no reducer)":
+  test "arg: 1":
+    var acc: string
+
+    (1..10) |> filter(it in 3..5).map($(it+1)).each(num):
+      acc &= num
+
+    check acc == "456"
+
+  test "args: 1+":
+    var acc: string
+
+    @[1, 2, 3] |> filter((_, v) => v > 1).each(i, v):
+      acc &= $(i, v)
+
+    check acc == "(0, 1)(1, 2)(2, 3)"
+
+suite "custom reducer":
+  test "args: 1":
     let res = (1..10) |> reduce(n, result = 0):
       result += n
 
     check res == sum toseq 1..10
 
-  test "1+":
+  test "args: 1+":
     let res = "hello".pairs |> reduce((idx, ch), result = ("", 0)):
       result[0] &= ch
       result[1] += idx
@@ -68,21 +87,6 @@ suite "custom ident :: reduce":
     check:
       res[0] == "hello"
       res[1] == sum toseq 0..("hello".high)
-
-test "custom code (AKA no reducer)":
-  var acc: string
-  (1..10) |> filter(it in 3..5).map($(it+1)).each(num):
-    acc &= num
-
-  check acc == "456"
-
-suite "inplace reducer":
-  test "without finalizer":
-    let t = (1..10) |> reduce(it, acc = 0):
-      if it == 6:
-        acc = it
-
-    check t == 6
 
   test "with finalizer":
     let t = (1..10) |> reduce(it, acc = 0, (acc-1)*2):
@@ -96,8 +100,7 @@ suite "adapters":
   let matrix = [
     [1, 2, 3],
     [4, 5, 6],
-    [7, 8, 9]
-  ]
+    [7, 8, 9]]
 
   test "cycle":
     check (1..3) |> cycle(7).toseq() == @[1, 2, 3, 1, 2, 3, 1]
@@ -109,7 +112,7 @@ suite "adapters":
     check (1..7) |> take(3).toseq() == @[1, 2, 3]
 
   test "flatten":
-    check matrix.items |> flatten().toseq() == toseq(1..9)
+    check matrix.items |> flatten().toseq() == toseq 1..9
 
   test "group":
     check (1..5) |> group(2).toseq() == @[@[1, 2], @[3, 4], @[5]]
@@ -121,8 +124,7 @@ suite "adapters":
 
   test "mix":
     check matrix.items |> flatten().map(-it).cycle(11).group(4).toseq() == @[
-      @[-1, -2, -3, -4], @[-5, -6, -7, -8], @[-9, -1, -2]
-    ]
+      @[-1, -2, -3, -4], @[-5, -6, -7, -8], @[-9, -1, -2]]
 
 suite "custom adapter":
   test "typed args":
