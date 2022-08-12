@@ -1,6 +1,18 @@
 # Change Logs
-### `0.4.5` -> `0.5.0`:
-- migrate to `template`s
+### `1.0.0` -> `1.0.4`:
+- fix subtle package problem
+- remove unncessary untyped from template args in generated code
+- Replace `with` by `inject`
+- add `define`
+
+### `0.4.5` -> `1.0.0`:
+- remove "Non Operator Version"
+- remove bracket style variable naming
+- add toCountTable reducer
+- migrate completely to templates
+- new custom reducer style
+- remove debug infix `!>` - ( use `-d:iterrrDebug` instead)
+- new documentation
 
 ### `0.4.4` -> `0.4.5`:
 - add support for nested
