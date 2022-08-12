@@ -371,44 +371,22 @@ macro `|>`*(itrbl, body): untyped =
 macro `|>`*(itrbl, body, code): untyped =
   iterrrImpl itrbl, flattenNestedDotExprCall body, code
 
+## TODO add -d:iterrrDebug for debug log
 
-template footer: untyped {.dirty.} =
-  echo ". . . . . . . . . . . . . . . . . . . ."
-  echo repr result
-  echo "---------------------------------------"
+# template footer: untyped {.dirty.} =
+#   echo ". . . . . . . . . . . . . . . . . . . ."
+#   echo repr result
+#   echo "---------------------------------------"
 
-macro `!>`*(itrbl, body): untyped =
-  result = iterrrImpl(itrbl, flattenNestedDotExprCall body)
-  echo "## ", repr(itrbl), " !> ", repr(body)
-  footer
+# macro `!>`*(itrbl, body): untyped =
+#   result = iterrrImpl(itrbl, flattenNestedDotExprCall body)
+#   echo "## ", repr(itrbl), " !> ", repr(body)
+#   footer
 
-macro `!>`*(itrbl, body, code): untyped =
-  result = iterrrImpl(itrbl, flattenNestedDotExprCall body, code)
-  echo "#["
-  echo repr(itrbl), " !> ", repr(body), ":\n", indent(repr code, 4)
-  echo "#]"
-  footer
+# macro `!>`*(itrbl, body, code): untyped =
+#   result = iterrrImpl(itrbl, flattenNestedDotExprCall body, code)
+#   echo "#["
+#   echo repr(itrbl), " !> ", repr(body), ":\n", indent(repr code, 4)
+#   echo "#]"
+#   footer
 
-
-template iterrr*(itrbl, body, code): untyped =
-  itrbl |> body:
-    code
-
-macro iterrr*(itrbl, body): untyped =
-  case body.kind:
-  of nnkStmtList:
-    var calls = body.toseq
-    let maybeCode = calls[^1][^1]
-
-    if maybeCode.kind == nnkStmtList:
-      calls[^1].del calls[^1].len - 1
-      iterrrImpl itrbl, calls, maybeCode
-
-    else:
-      iterrrImpl itrbl, calls
-
-  of nnkCall:
-    iterrrImpl itrbl, flattenNestedDotExprCall body
-
-  else:
-    err "invalid type. expected nnkCall or nnkStmtList but got: " & $body.kind

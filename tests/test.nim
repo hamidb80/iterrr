@@ -1,4 +1,4 @@
-import std/[unittest, sets, sequtils, strutils, math]
+import std/[unittest, tables, sets, sequtils, strutils, math]
 import iterrr
 
 
@@ -38,28 +38,10 @@ suite "nest":
   ]
 
   test "nested with different idents":
-    let r = matrix.pairs |> map[ia, a]((
-      a.pairs |> map[ib, _]((ia, ib)).toseq())).toseq()
+    let r = matrix.pairs |> map((ia, a) => (
+      a.pairs |> map((ib, _) => (ia, ib)).toseq())).toseq()
 
     check r == @[@[(0, 0), (0, 1)], @[(1, 0), (1, 1)]]
-
-suite "custom ident :: []":
-  test "1":
-    check (1..10) |> filter[i](i < 5).toSeq() == @[1, 2, 3, 4]
-
-  test "1+":
-    check (1..10) |> filter[i](i <= 5).toSeq() == toseq 1..5
-    check "hello".pairs |> map[i, c](i + ord(c)).toSeq() == @[104, 102, 110,
-        111, 115]
-
-  test "chain":
-    let res = (1..30) |>
-      map[n]($n)
-      .filter[s](s.len == 1)
-      .map[s](parseInt s)
-      .toSeq()
-
-    check res == toseq 1..9
 
 suite "custom ident :: =>":
   test "single":
@@ -73,13 +55,13 @@ suite "custom ident :: =>":
 
 suite "custom ident :: reduce":
   test "1":
-    let res = (1..10) |> reduce[result, n](0):
+    let res = (1..10) |> reduce(n, result = 0):
       result += n
 
     check res == sum toseq 1..10
 
   test "1+":
-    let res = "hello".pairs |> reduce[result, (idx, ch)](("", 0)):
+    let res = "hello".pairs |> reduce((idx, ch), result = ("", 0)):
       result[0] &= ch
       result[1] += idx
 
@@ -96,114 +78,17 @@ test "custom code (AKA no reducer)":
 
 suite "inplace reducer":
   test "without finalizer":
-    let t = (1..10) |> reduce(0):
+    let t = (1..10) |> reduce(it, acc = 0):
       if it == 6:
         acc = it
 
     check t == 6
 
   test "with finalizer":
-    let t = (1..10) |> reduce(0, acc - 1):
+    let t = (1..10) |> reduce(it, acc = 0, (acc-1)*2):
       acc = it
 
-    check t == 9
-
-  test "default idents":
-    let t = (1..10) |> reduce(0):
-      acc = it
-
-    check t == 10
-
-  test "call":
-    var result = 0
-
-    discard (1..2) |> reduce[acc, n](0, acc - 1) do:
-      result = n
-      break
-
-    check result == 1
-
-suite "non-operator":
-  test "simple chain":
-    check ("hello".items.iterrr filter(it != 'l').count()) == 3
-    check iterrr("hello".items, filter(it != 'l').count()) == 3
-
-  test "inplace reducer":
-    let prod = (3..6).iterrr reduce(1):
-      acc *= it
-
-    check prod == 3*4*5*6
-
-  test "each":
-    var acc: seq[int]
-
-    (3..6).iterrr map(it - 2).each(n):
-      acc.add n
-
-    check acc == @[1, 2, 3, 4]
-
-  test "multi line":
-    var acc: seq[int]
-    (3..6).iterrr:
-      filter(it > 3)
-      map[n](n - 2)
-      each(n):
-        acc.add n
-
-    check acc == @[2, 3, 4]
-
-suite "reducers":
-  let
-    emptyIntList = newseq[int]()
-    emptyBoolList = newseq[bool]()
-
-  test "count":
-    check (1..20) |> count() == 20
-
-  test "sum":
-    check (1..20) |> sum() == (1+20) * 20 div 2
-
-  test "min":
-    doAssertRaises RangeDefect:
-      discard emptyIntList.items |> min()
-
-    check [2, 1, 3].items |> min() == 1
-
-  test "max":
-    doAssertRaises RangeDefect:
-      discard emptyIntList.items |> max()
-
-    check [2, 1, 3].items |> max() == 3
-
-  test "first":
-    check (1..10) |> filter(it > 5).first() == 6
-
-    doAssertRaises RangeDefect:
-      discard (1..10) |> filter(it > 10).first()
-
-  test "last":
-    check (1..10) |> filter(it < 5).last() == 4
-
-    doAssertRaises RangeDefect:
-      discard (1..10) |> filter(it < 0).last()
-
-  test "any":
-    check:
-      emptyBoolList.items |> any() == false
-      [false, false, false].items |> any() == false
-      [true, false, false].items |> any() == true
-
-  test "all":
-    check:
-      emptyBoolList.items |> all() == true
-      [false, true, true].items |> all() == false
-      [true, true, true].items |> all() == true
-
-  test "strJoin":
-    check (1..4) |> strJoin(";") == "1;2;3;4"
-
-  test "toHashSet":
-    check (-5..5) |> map(abs it).toHashSet() == toHashSet toseq 0..5
+    check t == 18
 
 
 import std/deques

@@ -146,3 +146,15 @@ func strJoin*[T](res: var StrJoinState, s: T): bool =
   true
 
 template strJoinFinalizer*(n): untyped = n.acc
+
+# --------------------------------------
+
+import std/tables
+
+func toCountTableInit*[T](): CountTable[T] = initCountTable[T]()
+
+func toCountTable*[T](res: var CountTable[T], n: T): bool =
+  res.inc n
+  true
+
+template toCountTableFinalizer*(n): untyped = n
