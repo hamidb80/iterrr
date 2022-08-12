@@ -180,7 +180,7 @@ type AdapterWrapper = tuple
   info: AdapterInfo
 
 func toUntypedIdentDef(id: NimNode): NimNode =
-  newIdentDefs(id, ident "untyped")
+  newIdentDefs(id, newEmptyNode())
 
 func newDirtyTemplate(name: NimNode, args: seq[NimNode],
     body: NimNode): NimNode =
@@ -366,6 +366,8 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
   when defined iterrrDebug:
     debugEcho "---------------------------"
     debugEcho repr result
+    debugEcho treeRepr result
+
 
 # main ---------------------------------------
 
