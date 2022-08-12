@@ -271,10 +271,9 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
           if not `updaterId`(`accIdent`, `uniqLoopIdent`):
             break `mainLoopIdent`
 
-
-  # resolve 
-  for i, call in ipack.callChain.mrpairs:
-    let p =
+  
+  for i, call in ipack.callChain.mrpairs: # resolve calls
+    let e =
       case call.kind:
       of hoCustom: newEmptyNode()
       else:
@@ -292,23 +291,23 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
       of hoMap:
         quote:
           block:
-            let `uniqLoopIdent` = `p`
+            let `uniqLoopIdent` = `e`
             `loopBody`
 
       of hoFilter:
         quote:
-          if `p`:
+          if `e`:
             `loopBody`
 
       of hoBreakIf:
         quote:
-          if `p`:
+          if `e`:
             break `mainLoopIdent`
           else:
             `loopBody`
 
       of hoWith:
-        newStmtList p, loopBody
+        newStmtList e, loopBody
 
       of hoCustom:
         let adptr = customAdapters[call.name.strval.nimIdentNormalize]
@@ -339,11 +338,11 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         code.getNode(adptr.loopPath)[ForBody]
 
   
-  result = quote:
+  result = quote: # wrap inside mainloop
     for `uniqLoopIdent` in `itrbl`:
       `loopBody`
 
-  for w in wrappers.ritems:
+  for w in wrappers.ritems: # resolve adapters
     result = block:
       w.code.replaceNode w.info.loopPath, result
 
@@ -355,7 +354,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
       w.code
 
-  result = quote:
+  result = quote: # final structure
     block:
       `tmplts`
       `accDef`
