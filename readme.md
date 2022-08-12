@@ -3,9 +3,12 @@ iterate faster ... 🏎️.
 Write higher-order functions, get its imperative style at the compile time!
 
 ## The Problem
+The problem is that writing a full nested loop is a boring task, and using clojure iterators slows down the speed.
+
+Can meta-programming help us?
 
 ## The Solution
-`iterrr` uses the ultimate power of meta programming to bring you the what you just have wished.
+`iterrr` uses the ultimate power of meta-programming to bring you what you just have wished.
 
 ## Usage
 ### syntax
@@ -78,7 +81,7 @@ echo s.items |> map($it) # works fine
 echo s.pairs |> map($it) # works fine
 ```
 
-### Define A Custom Reducer
+### Define A Reducer
 **every reducer have**: [let't name our custom reducer `zzz`]
 1. `zzzInit[T](args...): ...` :: initializes the value of accumulator(state) :: must be *generic*.
 2. `zzzUpdate(var acc, newValue): bool` :: updates the accumulator based on `newValue`, if returns false, the iteration stops.
@@ -86,7 +89,7 @@ echo s.pairs |> map($it) # works fine
 
 **NOTE**: see implementations in `src/iterrr/reducers.nim`
 
-### Inplace Reducer
+### Custom Reducer
 **pattern**:
 ```nim
 ITER |> ...reduce(idents, acc = initial_value, [finalizer]):
@@ -137,7 +140,6 @@ let matrix = [
   [4, 5, 6],
   [7, 8, 9]
 ]
-
 matrix.items |> flatten().map(-it).cycle(11).group(4).toseq()
 ```
 result:
