@@ -17,7 +17,11 @@ func `&.`*(id: NimNode, str: string): NimNode =
   of nnkAccQuoted: id[0] &. str
   else: err "exptected nnkIdent or nnkAccQuoted but got " & $id.kind
 
-template `~=`*(id1, id2): untyped = eqIdent(id1, id2)
+template `~=`*(id1, id2): untyped = 
+  eqIdent(id1, id2)
+
+template expect*(expr, msg): untyped = 
+  doAssert expr, msg
 
 func `or`*[T](s1, s2: seq[T]): seq[T] =
   case s1.len:

@@ -59,99 +59,99 @@ suite "custom code (AKA no reducer)":
   test "arg: 1":
     var acc: string
 
-    (1..10) |> filter(it in 3..5).map($(it+1)).each(num):
-      acc &= num
+    (1..10) |> filter(it in 3..5).map($it).each(s):
+      acc &= s
 
-    check acc == "456"
+    check acc == "345"
 
   test "args: 1+":
     var acc: string
 
-    @[1, 2, 3] |> filter((_, v) => v > 1).each(i, v):
+    @[1, 2, 3].pairs |> filter((_, v) => v > 1).each(i, v):
       acc &= $(i, v)
 
-    check acc == "(0, 1)(1, 2)(2, 3)"
+    check acc == "(1, 2)(2, 3)"
 
-suite "custom reducer":
-  test "args: 1":
-    let res = (1..10) |> reduce(n, result = 0):
-      result += n
+# suite "custom reducer":
+#   test "args: 1":
+#     let res = (1..10) |> reduce(n, result = 0):
+#       result += n
 
-    check res == sum toseq 1..10
+#     check res == sum toseq 1..10
 
-  test "args: 1+":
-    let res = "hello".pairs |> reduce((idx, ch), result = ("", 0)):
-      result[0] &= ch
-      result[1] += idx
+#   test "args: 1+":
+#     let res = "hello".pairs |> reduce((idx, ch), result = ("", 0)):
+#       result[0] &= ch
+#       result[1] += idx
 
-    check:
-      res[0] == "hello"
-      res[1] == sum toseq 0..("hello".high)
+#     check:
+#       res[0] == "hello"
+#       res[1] == sum toseq 0..("hello".high)
 
-  test "with finalizer":
-    let t = (1..10) |> reduce(it, acc = 0, (acc-1)*2):
-      acc = it
+#   test "with finalizer":
+#     let t = (1..10) |> reduce(it, acc = 0, (acc-1)*2):
+#       acc = it
 
-    check t == 18
+#     check t == 18
 
 
-import std/deques
-suite "adapters":
-  let matrix = [
-    [1, 2, 3],
-    [4, 5, 6],
-    [7, 8, 9]]
+# import std/deques
+# suite "adapters":
+#   let matrix = [
+#     [1, 2, 3],
+#     [4, 5, 6],
+#     [7, 8, 9]]
 
-  test "cycle":
-    check (1..3) |> cycle(7).toseq() == @[1, 2, 3, 1, 2, 3, 1]
+#   test "cycle":
+#     check (1..3) |> cycle(7).toseq() == @[1, 2, 3, 1, 2, 3, 1]
 
-  test "drop":
-    check (1..7) |> drop(3).toseq() == @[4, 5, 6, 7]
+#   test "drop":
+#     check (1..7) |> drop(3).toseq() == @[4, 5, 6, 7]
 
-  test "take":
-    check (1..7) |> take(3).toseq() == @[1, 2, 3]
+#   test "take":
+#     check (1..7) |> take(3).toseq() == @[1, 2, 3]
 
-  test "flatten":
-    check matrix.items |> flatten().toseq() == toseq 1..9
+#   test "flatten":
+#     check matrix.items |> flatten().toseq() == toseq 1..9
 
-  test "group":
-    check (1..5) |> group(2).toseq() == @[@[1, 2], @[3, 4], @[5]]
-    check (1..5) |> group(2, false).toseq() == @[@[1, 2], @[3, 4]]
+#   test "group":
+#     check (1..5) |> group(2).toseq() == @[@[1, 2], @[3, 4], @[5]]
+#     check (1..5) |> group(2, false).toseq() == @[@[1, 2], @[3, 4]]
 
-  test "window":
-    let acc = (1..5) |> window(3).toseq()
-    check acc.mapIt(it.toseq) == @[@[1, 2, 3], @[2, 3, 4], @[3, 4, 5]]
+#   test "window":
+#     let acc = (1..5) |> window(3).toseq()
+#     check acc.mapIt(it.toseq) == @[@[1, 2, 3], @[2, 3, 4], @[3, 4, 5]]
 
-  test "mix":
-    check matrix.items |> flatten().map(-it).cycle(11).group(4).toseq() == @[
-      @[-1, -2, -3, -4], @[-5, -6, -7, -8], @[-9, -1, -2]]
+#   test "mix":
+#     check matrix.items |> flatten().map(-it).cycle(11).group(4).toseq() == @[
+#       @[-1, -2, -3, -4], @[-5, -6, -7, -8], @[-9, -1, -2]]
 
-suite "custom adapter":
-  test "typed args":
-    iterator plus(loop: T; `by`: int): T {.adapter.} =
-      for it in loop:
-        yield it + `by`
+# suite "custom adapter":
+#   test "typed args":
+#     iterator plus(loop: T; `by`: int): T {.adapter.} =
+#       for it in loop:
+#         yield it + `by`
 
-    check (1..5) |> plus(2).toseq() == toseq(3..7)
+#     check (1..5) |> plus(2).toseq() == toseq(3..7)
 
-  test "untyped args":
-    iterator plus(loop: T; `by`): T {.adapter.} =
-      for it in loop:
-        yield it + `by`
+#   test "untyped args":
+#     iterator plus(loop: T; `by`): T {.adapter.} =
+#       for it in loop:
+#         yield it + `by`
 
-    check (1..5) |> plus(2).toseq() == toseq(3..7)
+#     check (1..5) |> plus(2).toseq() == toseq(3..7)
 
-  test "default value":
-    iterator plus(loop: T; `by`: int = 2): T {.adapter.} =
-      for it in loop:
-        yield it + `by`
+#   test "default value":
+#     iterator plus(loop: T; `by`: int = 2): T {.adapter.} =
+#       for it in loop:
+#         yield it + `by`
 
-    check (1..5) |> plus().toseq() == toseq(3..7)
-    check (1..5) |> plus(1).toseq() == toseq(2..6)
+#     check (1..5) |> plus().toseq() == toseq(3..7)
+#     check (1..5) |> plus(1).toseq() == toseq(2..6)
 
-  test "multi args":
-    iterator ALU(loop: T; `adder`, `mult`: int): T {.adapter.} =
-      for it in loop:
-        yield (it + `adder`) * `mult`
+#   test "multi args":
+#     iterator ALU(loop: T; `adder`, `mult`: int): T {.adapter.} =
+#       for it in loop:
+#         yield (it + `adder`) * `mult`
 
-    check (1..3) |> ALU(1, -1).toseq() == @[-2, -3, -4]
+#     check (1..3) |> ALU(1, -1).toseq() == @[-2, -3, -4]
