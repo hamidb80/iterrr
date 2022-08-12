@@ -1,4 +1,4 @@
-import std/[sequtils, tables]
+import std/[strutils, sequtils, tables]
 import std/macros, macroplus
 import ./iterrr/[reducers, helper, iterators, adapters]
 
@@ -256,26 +256,12 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         makeAliasCallWith id, ipack.reducer.params or @[uniqLoopIdent], uniqLoopIdent
 
       elif hasCustomReducer:
-        if ipack.reducer.idents.len == 2:
-          let k = ipack.reducer.idents[1].kind
+        let 
+          id = ident "iterrrBody" & genUniqId()
+          args = extractIdents ipack.reducer.params[0]
 
-          case k: # TODO use fn
-          of nnkIdent:
-            code.replacedIdents(ipack.reducer.idents, [accIdent, uniqLoopIdent])
-
-          of nnkTupleConstr:
-            let
-              customIdents = ipack.reducer.idents[1].toseq
-              repls = genBracketExprsOf(uniqLoopIdent, customIdents.len)
-
-            code.replacedIdents(
-              ipack.reducer.idents[0] & customIdents,
-              @[accIdent] & repls)
-
-          else:
-            err "invalid inplace reducer custom ident type. got: " & $k
-        else:
-          code.replacedIdent ident"it", uniqLoopIdent
+        tmplts.add newDirtyTemplate(id, args.map toUntypedIdentDef, code)
+        makeAliasCallWith id, args, uniqLoopIdent
 
       else:
         quote:
@@ -322,7 +308,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         newStmtList p, loopBody
 
       of hoCustom:
-        let adptr = customAdapters[call.name.strval]
+        let adptr = customAdapters[call.name.strval.nimIdentNormalize]
         var code = adptr.wrapperCode.copy.replacedIdent(ident"it", uniqLoopIdent)
 
         code.resolveUniqIdents $i
