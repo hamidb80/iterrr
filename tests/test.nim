@@ -19,16 +19,16 @@ suite "main entities":
   test "breakif":
     check (1..5) |> breakif(it == 4).toSeq() == @[1, 2, 3]
 
-  test "do":
+  test "with":
     var c = 0
-    discard "yes".items |> filter(true).do(inc c).toSeq()
+    discard "yes".items |> filter(true).with(inc c).toSeq()
     check c == 3
 
   test "mix":
     check (1..5) |> map(it * it).filter(it > 10).toSeq() == @[16, 25]
 
     var c = 0
-    check "yes".items |> map((c, it)).do(inc c).toSeq() == @[(0, 'y'), (1, 'e'),
+    check "yes".items |> map((c, it)).with(inc c).toSeq() == @[(0, 'y'), (1, 'e'),
         (2, 's')]
 
 suite "nest":

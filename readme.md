@@ -25,7 +25,7 @@ iterable |> entity1(_).entity2(_)...Final()
 1. **map** :: similar to `mapIt` from `std/sequtils`
 2. **filter** :: similar to `filterIt` from `std/sequtils`
 3. **breakif** :: similar to `takeWhile` in functional programming languages but negative.
-4. **do** :: does something.
+4. **with** :: does something.
 
 ### Final
 final can be:
