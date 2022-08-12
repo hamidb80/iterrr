@@ -1,11 +1,12 @@
 # Package
 
-version       = "0.5.0"
+version       = "1.0.0"
 author        = "hamidb80"
 description   = "iterate faster. functional style, lazy like, extensible iterator library"
 license       = "MIT"
 srcDir        = "src"
 
+bin = @["iterrr"]
 
 # Dependencies
 

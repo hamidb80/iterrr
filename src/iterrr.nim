@@ -170,6 +170,7 @@ proc resolveUniqIdents(node: NimNode, by: string) =
 
 func finalizerIdent(n: NimNode): NimNode = n &. "Finalizer"
 func initIdent(n: NimNode): NimNode = n &. "Init"
+func updaterIdent(n: NimNode): NimNode = n &. "Update"
 
 type AdapterWrapper = tuple
   code: NimNode
@@ -256,7 +257,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         makeAliasCallWith id, ipack.reducer.params or @[uniqLoopIdent], uniqLoopIdent
 
       elif hasCustomReducer:
-        let 
+        let
           id = ident "iterrrBody" & genUniqId()
           args = extractIdents ipack.reducer.params[0]
 
@@ -264,8 +265,9 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         makeAliasCallWith id, args, uniqLoopIdent
 
       else:
+        let updaterId = reducerIdent.updaterIdent
         quote:
-          if not `reducerIdent`(`accIdent`, `uniqLoopIdent`):
+          if not `updaterId`(`accIdent`, `uniqLoopIdent`):
             break `mainLoopIdent`
 
 

@@ -7,7 +7,7 @@ template rangeError(): untyped =
 
 func toSeqInit*[T](): seq[T] = newseq[T]()
 
-func toSeq*[T](acc: var seq[T], n: T): bool =
+func toSeqUpdate*[T](acc: var seq[T], n: T): bool =
   acc.add n
   true
 
@@ -17,7 +17,7 @@ template toSeqFinalizer*(n): untyped = n
 
 template countInit*[T](): int = 0
 
-template count*[T](acc: var int, _: T): bool =
+template countUpdate*[T](acc: var int, _: T): bool =
   inc acc
   true
 
@@ -28,7 +28,7 @@ template countFinalizer*(n): untyped = n
 func sumInit*[T](): T = default T
 func sumInit*[T](n: T): T = n
 
-func sum*[T](acc: var T, n: T): bool =
+func sumUpdate*[T](acc: var T, n: T): bool =
   inc acc, n
   true
 
@@ -43,7 +43,7 @@ template getOption(n): untyped =
 
 func minInit*[T](): Option[T] = none T
 
-func min*[T](res: var Option[T], n: T): bool =
+func minUpdate*[T](res: var Option[T], n: T): bool =
   if (isNone res) or (res.get > n):
     res = some n
 
@@ -55,7 +55,7 @@ func minFinalizer*[T](res: Option[T]): T =
 
 func maxInit*[T](): Option[T] = none T
 
-func max*[T](res: var Option[T], n: T): bool =
+func maxUpdate*[T](res: var Option[T], n: T): bool =
   if (isNone res) or (res.get < n):
     res = some n
 
@@ -68,7 +68,7 @@ func maxFinalizer*[T](res: Option[T]): T =
 
 func firstInit*[T](): Option[T] = none T
 
-func first*[T](res: var Option[T], val: T): bool =
+func firstUpdate*[T](res: var Option[T], val: T): bool =
   if isNone res:
     res = some val
     false
@@ -82,7 +82,7 @@ func firstFinalizer*[T](n: Option[T]): T =
 
 func lastInit*[T](): Option[T] = none T
 
-func last*[T](res: var Option[T], val: T): bool =
+func lastUpdate*[T](res: var Option[T], val: T): bool =
   res = some val
   true
 
@@ -93,7 +93,7 @@ func lastFinalizer*[T](n: Option[T]): T =
 
 func anyInit*[T](): bool = false
 
-func any*(res: var bool, n: bool): bool =
+func anyUpdate*(res: var bool, n: bool): bool =
   if n:
     res = true
     false
@@ -106,7 +106,7 @@ template anyFinalizer*(n): untyped = n
 
 func allInit*[T](): bool = true
 
-func all*(res: var bool, n: bool): bool =
+func allUpdate*(res: var bool, n: bool): bool =
   if n:
     true
 
@@ -121,7 +121,7 @@ import std/sets
 
 func toHashSetInit*[T](): HashSet[T] = initHashSet[T]()
 
-func toHashSet*[T](res: var HashSet[T], n: T): bool =
+func toHashSetUpdate*[T](res: var HashSet[T], n: T): bool =
   res.incl n
   true
 
@@ -137,7 +137,7 @@ func strJoinInit*[T](): StrJoinState = discard
 func strJoinInit*[T](separator: string): StrJoinState =
   StrJoinState(sep: separator)
 
-func strJoin*[T](res: var StrJoinState, s: T): bool =
+func strJoinUpdate*[T](res: var StrJoinState, s: T): bool =
   if res.acc == "":
     res.acc = $s
   else:
@@ -153,7 +153,7 @@ import std/tables
 
 func toCountTableInit*[T](): CountTable[T] = initCountTable[T]()
 
-func toCountTable*[T](res: var CountTable[T], n: T): bool =
+func toCountTableUpdate*[T](res: var CountTable[T], n: T): bool =
   res.inc n
   true
 
