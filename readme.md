@@ -69,7 +69,7 @@ iterable |> entity1(_).entity2(_)...each(loopIdents):
 1. **map** :: similar to `mapIt` from `std/sequtils`
 2. **filter** :: similar to `filterIt` from `std/sequtils`
 3. **breakif** :: similar to `takeWhile` in functional programming languages but negative.
-4. **with** :: inserts custom code
+4. **inject** :: injects custom code
 
 #### 1. predefined reducer
 **NOTE:** you can chain as many `map`/`filter`/... as you want in any order, but there is **only one** reducer.
@@ -113,8 +113,7 @@ using just `it` in `mapIt` and `filterIt` is just ... and makes code a little un
 (1..10) |> map((n) => _ )
 (1..10) |> map((a1, a2, ...) => _ )
 (1..10) |> each((a1, a2, ...) => _ )
-(1..10) |> reduce((a1, a2, ...), acc = 2):
-  ...
+(1..10) |> reduce((a1, a2, ...), acc = 2)
 ```
 
 **example**:
