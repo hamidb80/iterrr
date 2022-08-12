@@ -215,34 +215,6 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         ipack.reducer.params[1][0] # TODO add to macroplus nnkEqExprEq
       else:
         ident "iterrrAcc" & genUniqId()
-    
-    accDef =
-      if hasCustomCode: newEmptyNode()
-
-      elif hasCustomReducer:
-        let initialValue = ipack.reducer.params[1][1] # TODO EqExprEq
-        quote:
-          var `accIdent` = `initialValue`
-
-      else:
-        let
-          dtype = detectType(itrbl, uniqLoopIdent, ipack.callChain)
-          reducerInitCall =
-            newTree(nnkBracketExpr, reducerIdent.initIdent, dtype).newCall.add:
-            ipack.reducer.params
-
-        quote:
-          var `accIdent` = `reducerInitCall`
-
-    accFinalizeCall =
-      if hasCustomCode: newEmptyNode()
-
-      elif hasCustomReducer:
-        case ipack.reducer.params.len:
-        of 3: ipack.reducer.params[2]
-        else: accIdent
-
-      else: newCall(reducerIdent.finalizerIdent, accIdent)
 
 
   if hasCustomCode or hasCustomReducer:
@@ -271,7 +243,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
           if not `updaterId`(`accIdent`, `uniqLoopIdent`):
             break `mainLoopIdent`
 
-  
+
   for i, call in ipack.callChain.mrpairs: # resolve calls
     let e =
       case call.kind:
@@ -284,7 +256,8 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
             toUntypedIdentDef
 
         tmplts.add newDirtyTemplate(tname, args, body)
-        makeAliasCallWith(tname, args, uniqLoopIdent)
+        call.expr = makeAliasCallWith(tname, args, uniqLoopIdent)
+        call.expr
 
     loopBody = block:
       case call.kind:
@@ -337,10 +310,38 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
 
         code.getNode(adptr.loopPath)[ForBody]
 
-  
   result = quote: # wrap inside mainloop
     for `uniqLoopIdent` in `itrbl`:
       `loopBody`
+
+  let
+    accDef =
+      if hasCustomCode: newEmptyNode()
+
+      elif hasCustomReducer:
+        let initialValue = ipack.reducer.params[1][1] # TODO EqExprEq
+        quote:
+          var `accIdent` = `initialValue`
+
+      else:
+        let
+          dtype = detectType(itrbl, uniqLoopIdent, ipack.callChain)
+          reducerInitCall =
+            newTree(nnkBracketExpr, reducerIdent.initIdent, dtype).newCall.add:
+            ipack.reducer.params
+
+        quote:
+          var `accIdent` = `reducerInitCall`
+
+    accFinalizeCall =
+      if hasCustomCode: newEmptyNode()
+
+      elif hasCustomReducer:
+        case ipack.reducer.params.len:
+        of 3: ipack.reducer.params[2]
+        else: accIdent
+
+      else: newCall(reducerIdent.finalizerIdent, accIdent)
 
   for w in wrappers.ritems: # resolve adapters
     result = block:
