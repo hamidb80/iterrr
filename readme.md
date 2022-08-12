@@ -14,7 +14,7 @@ The problem is that writing a full nested loop is a boring task, and using cloju
 
 
 ## example of generated code
-```
+```nim
 import std/sets, iterrr
 
 let 
