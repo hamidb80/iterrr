@@ -9,6 +9,8 @@ The problem is that writing a full nested loop is a boring task, and using cloju
 
 **The real question is:** "Can meta-programming help us?"
 
+## TODO show expanded code, learn from zero functionals doc
+
 ## The Solution
 `iterrr` uses the *ultimate* power of meta-programming to bring you what you've just wished.
 
