@@ -362,8 +362,9 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
         `result`
       `accFinalizeCall`
 
-  debugEcho "--------------------"
-  debugEcho repr result
+  when defined iterrrDebug:
+    debugEcho "---------------------------"
+    debugEcho repr result
 
 # main ---------------------------------------
 
@@ -372,22 +373,3 @@ macro `|>`*(itrbl, body): untyped =
 
 macro `|>`*(itrbl, body, code): untyped =
   iterrrImpl itrbl, flattenNestedDotExprCall body, code
-
-## TODO add -d:iterrrDebug for debug log
-
-# template footer: untyped {.dirty.} =
-#   echo ". . . . . . . . . . . . . . . . . . . ."
-#   echo repr result
-#   echo "---------------------------------------"
-
-# macro `!>`*(itrbl, body): untyped =
-#   result = iterrrImpl(itrbl, flattenNestedDotExprCall body)
-#   echo "## ", repr(itrbl), " !> ", repr(body)
-#   footer
-
-# macro `!>`*(itrbl, body, code): untyped =
-#   result = iterrrImpl(itrbl, flattenNestedDotExprCall body, code)
-#   echo "#["
-#   echo repr(itrbl), " !> ", repr(body), ":\n", indent(repr code, 4)
-#   echo "#]"
-#   footer
