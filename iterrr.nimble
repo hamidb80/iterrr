@@ -6,8 +6,6 @@ description   = "iterate faster. functional style, extensible iterator library"
 license       = "MIT"
 srcDir        = "src"
 
-bin = @["iterrr"]
-
 # Dependencies
 
 requires "nim >= 1.6.4"
