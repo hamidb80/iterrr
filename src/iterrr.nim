@@ -251,7 +251,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
       else:
         let
           body = call.expr
-          tname = ident "iterrFn" & genUniqId()
+          tname = ident "iterrrFn" & genUniqId()
           args = (call.iteratorIdentAliases or @[ident "it"]).map:
             toUntypedIdentDef
 

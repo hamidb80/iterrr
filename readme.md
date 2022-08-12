@@ -9,35 +9,73 @@ The problem is that writing a full nested loop is a boring task, and using cloju
 
 **The real question is:** "Can meta-programming help us?"
 
-## TODO show expanded code, learn from zero functionals doc
-
 ## The Solution
 `iterrr` uses the *ultimate* power of meta-programming to bring you what you've just wished.
 
+
+## example of generated code
+```
+import std/sets, iterrr
+
+let 
+  numbers = @[1, -4, 5, 7,  -13, 14, 6, 4, 16, 9, -12]
+  c = 7
+
+let neighbours = numbers.items |> 
+  filter(abs(it - c) < 4)
+  .map(abs(it - c))
+  .toHashSet()
+
+echo neighbours
+```
+
+```nim
+block:
+  template iterrrFn3(it: untyped): untyped {.dirty.} =
+    abs(it - c)
+
+  template iterrrFn4(it: untyped): untyped {.dirty.} =
+    abs(it - c) < 4
+
+  var iterrrAcc2 = toHashSetInit[typeof(iterrrFn3(default(typeof(numbers.items))))]()
+  block mainLoop:
+    for li1 in numbers.items:
+      if iterrrFn4(li1):
+        block:
+          let li1 = iterrrFn3(li1)
+          if not toHashSetUpdate(iterrrAcc2, li1):
+            break mainLoop
+  toHashSetFinalizer(iterrrAcc2)
+```
+
 ## Usage
 
-### syntax
+### complete syntax
+**There is 3 type of usage:**
 ```nim
-iterable |> entity1(_).entity2(_)...Final()
+# predefined reducer
+iterable |> entity1(_).entity2(_)...Reducer()
+
+# custom reducer
+iterable |> entity1(_).entity2(_)...reduce(loopIdents, accIdent = initial_value, [Finalizer]):
+  # update accIdent
+
+# custom code
+iterable |> entity1(_).entity2(_)...each(loopIdents):
+  # do with loopIdents
 ```
 
 ### Main Entities:
 1. **map** :: similar to `mapIt` from `std/sequtils`
 2. **filter** :: similar to `filterIt` from `std/sequtils`
 3. **breakif** :: similar to `takeWhile` in functional programming languages but negative.
-4. **with** :: does something.
-
-### Final
-final can be:
-1. predefined reducer
-2. custom reducer
-3. custom code
+4. **with** :: inserts custom code
 
 #### 1. predefined reducer
-
 **NOTE:** you can chain as many `map`/`filter`/... as you want in any order, but there is **only one** reducer.
 
-you can use other reducers, such as:
+
+**There are some predefined reducers in iterrr library:**
 * `toSeq` :: stores elements into a `seq`
 * `count` :: counts elements
 * `sum` :: calculates summation
@@ -50,8 +88,6 @@ you can use other reducers, such as:
 * `toHashSet` :: stores elements into a `HashSet`
 * `strJoin` :: similar to `join` from `std/strutils`
 * `toCountTable` :: similar to `toCountTable` from `std/tables`
-* **[your custom reducer!]**
-
 
 here's how you can get maximum x, when `flatPoints` is: `[x0, y0, x1, y1, x2, y2, ...]`
 ```nim
@@ -60,7 +96,7 @@ let xmax = flatPoints.pairs |> filter(it[0] mod 2 == 0).map(it[1]).max()
 let xmax = countup(0, flatPoints.high, 2) |> map(flatPoints[it]).max()
 ```
 
-**NOTE**: see usage in `tests/test.nim`
+**NOTE**: see more examples in `tests/test.nim`
 
 ### Custom Idents ?!?
 using just `it` in `mapIt` and `filterIt` is just ... and makes code a little unreadable.
@@ -70,14 +106,15 @@ using just `it` in `mapIt` and `filterIt` is just ... and makes code a little un
 2. if there was only 1 custom ident, the custom ident is replaced with `it`
 3. if there was more than 1 custom idents, `it` is unpacked 
 
-**I mean**:  
+**Here's some examples**:  
 ```nim
-(1..10) |> map( expr ) # "it" is available inside the "map"
-
-## infix style`
-(1..10) |> map(n => expr )
-(1..10) |> map((n) => expr )
-(1..10) |> map((a1, a2, ...) => expr )
+(1..10) |> map( _ ) # "it" is available inside the "map"
+(1..10) |> map(n => _ )
+(1..10) |> map((n) => _ )
+(1..10) |> map((a1, a2, ...) => _ )
+(1..10) |> each((a1, a2, ...) => _ )
+(1..10) |> reduce((a1, a2, ...), acc = 2):
+  ...
 ```
 
 **example**:
@@ -96,7 +133,7 @@ echo s.items |> map($it) # works fine
 echo s.pairs |> map($it) # works fine
 ```
 
-### Define A Reducer
+### Define Your Reducer!
 **every reducer have**: [let't name our custom reducer `zzz`]
 1. `zzzInit[T](args...): ...` :: initializes the value of accumulator(state) :: must be *generic*.
 2. `zzzUpdate(var acc, newValue): bool` :: updates the accumulator based on `newValue`, if returns false, the iteration stops.
@@ -107,22 +144,25 @@ echo s.pairs |> map($it) # works fine
 ### Custom Reducer
 **pattern**:
 ```nim
-ITER |> ...reduce(idents, acc = initial_value, [finalizer]):
-   update acc here
+ITER |> ...reduce(idents, acc = initial_value, [finalizer]): 
+   update acc here 
 ```
 
-**example**:
+**Notes**:
+- acc can be any ident like `result` or `answer`, ... 
+- **Finalizer**:
+  - it's optional
+  - it's an experssion inside of it you have access to the `acc` ident
+  - the default finalizer is `acc` ident 
+
+**Example of searching for a number**:
 ```nim
-let sum = (1..10) |> reduce(it, acc = 0):
-  acc += it
-
-# with finalizer
-let sum_2 = "help".pairs |> reduce((index, ch), acc = -1, acc * 2):
-  acc += index
-
-# sum_2 = (-1 + 0 + 1 + 2 + 3) * 2 = 10
-
+let element = (1..10) |> reduce(it, answer = none int, answer.get):
+  if your_condition(it):
+    answer = some MyNumber
+    break mainLoop
 ```
+**Note**: if the item has not found, raises `UnpackDefect` error as result of `get` function  in finalizer `answer.get`.
 
 ### Don't Wanna Use Reducer?
 > My view is that a lot of the time in Nim when you're doing filter or map you're just going to operate it on afterwards
@@ -133,10 +173,17 @@ you can do it with `each(arg1, arg2,...)`. [arguments semantic is the same as cu
 ```nim
 (1..10) |> filter(it in 3..5).each(num):
   echo num
+  if num < 7:
+    break mainLoop
 ```
 
+**Note**: `mainLoop` is the main loop block
+
 ### Custom Adapter
-**Note:** adapters are like dirty templates, you have to import the dependencies of adapters in order to use them.
+adapters are inspired from implmentation of iterators in Nim.
+TODO: explain more
+
+**Limitations**: you have to import the dependencies of adapters in order to use them.
 
 **Built-in adapter**:
 - `group`
@@ -172,6 +219,13 @@ result:
 for now the name of loop iterator are limited to `it`.
 TODO; 
 see `src`/`iterrr`/`adapters`.
+
+## Debugging
+use `-d:iterrrDebug` flag to see generated code.
+
+## Breaking changes
+### `0.x` -> `1.x`:
+- using brackets for defining custom idents is no longer supported.
 
 
 ## Inspirations
