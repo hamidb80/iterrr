@@ -5,21 +5,33 @@ Write higher-order functions, get its imperative style at the compile time!
 ## The Problem
 The problem is that writing a full nested loop is a boring task, and using clojure iterators slows down the speed.
 
-Can meta-programming help us?
+(`std/sequtils` is a nightmare, [iterutils](https://github.com/def-/nim-iterutils) is slightly better, but can we go faster? )
+
+**The real question is:** "Can meta-programming help us?"
 
 ## The Solution
-`iterrr` uses the ultimate power of meta-programming to bring you what you just have wished.
+`iterrr` uses the *ultimate* power of meta-programming to bring you what you've just wished.
 
 ## Usage
+
 ### syntax
-use `|>` for normal.
+```nim
+iterable |> entity1(_).entity2(_)...Final()
+```
 
 ### Main Entities:
 1. **map** :: similar to `mapIt` from `std/sequtils`
 2. **filter** :: similar to `filterIt` from `std/sequtils`
 3. **breakif** :: similar to `takeWhile` in functional programming languages but negative.
 4. **do** :: does something.
-5. **[reducer]**
+
+### Final
+final can be:
+1. predefined reducer
+2. custom reducer
+3. custom code
+
+#### 1. predefined reducer
 
 **NOTE:** you can chain as many `map`/`filter`/... as you want in any order, but there is **only one** reducer.
 
@@ -38,7 +50,6 @@ you can use other reducers, such as:
 * `toCountTable` :: similar to `toCountTable` from `std/tables`
 * **[your custom reducer!]**
 
-**NOTE**: see usage in `tests/test.nim`
 
 here's how you can get maximum x, when `flatPoints` is: `[x0, y0, x1, y1, x2, y2, ...]`
 ```nim
@@ -46,6 +57,8 @@ let xmax = flatPoints.pairs |> filter(it[0] mod 2 == 0).map(it[1]).max()
 # or
 let xmax = countup(0, flatPoints.high, 2) |> map(flatPoints[it]).max()
 ```
+
+**NOTE**: see usage in `tests/test.nim`
 
 ### Custom Idents ?!?
 using just `it` in `mapIt` and `filterIt` is just ... and makes code a little unreadable.
