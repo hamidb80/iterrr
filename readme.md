@@ -15,37 +15,30 @@ The problem is that writing a full nested loop is a boring task, and using cloju
 
 ## example of generated code
 ```nim
-import std/sets, iterrr
-
-let 
-  numbers = @[1, -4, 5, 7,  -13, 14, 6, 4, 16, 9, -12]
-  c = 7
-
-let neighbours = numbers.items |> 
-  filter(abs(it - c) < 4)
-  .map(abs(it - c))
-  .toHashSet()
-
-echo neighbours
+"hello".pairs |> 
+  filter((i, _) => i  > 1)
+  .map((_, ch) => ch)
+  .strjoin() ## llo
 ```
 
 ```nim
 block:
-  template iterrrFn3(it: untyped): untyped {.dirty.} =
-    abs(it - c)
+  template iterrrFn3(_; ch): untyped {.dirty.} =
+    ch
 
-  template iterrrFn4(it: untyped): untyped {.dirty.} =
-    abs(it - c) < 4
+  template iterrrFn4(i; _): untyped {.dirty.} =
+    i > 1
 
-  var iterrrAcc2 = toHashSetInit[typeof(iterrrFn3(default(typeof(numbers.items))))]()
+  var iterrrAcc2 = strjoinInit[typeof(iterrrFn3(
+      default(typeof("hello".pairs))[0], default(typeof("hello".pairs))[1]))]()
   block mainLoop:
-    for li1 in numbers.items:
-      if iterrrFn4(li1):
+    for li1 in "hello".pairs:
+      if iterrrFn4(li1[0], li1[1]):
         block:
-          let li1 = iterrrFn3(li1)
-          if not toHashSetUpdate(iterrrAcc2, li1):
+          let li1 = iterrrFn3(li1[0], li1[1])
+          if not strjoinUpdate(iterrrAcc2, li1):
             break mainLoop
-  toHashSetFinalizer(iterrrAcc2)
+  strjoinFinalizer(iterrrAcc2)
 ```
 
 ## Usage
