@@ -3,83 +3,13 @@ iterate faster ... 🏎️.
 Write higher-order functions, get its imperative style at the compile time!
 
 ## The Problem
-TODO update the doc - were using temaplates now 
-
-ِDeclarative programming is good, right? 
-
-Instead of
-```nim
-var result: seq[int]
-
-for it in list:
-  if it mod 2 == 0:
-    result.add it * 2
-```
-
-You can easily write:
-```nim
-list.filterIt(it mod 2 == 0).mapIt(it * 2)
-```
-Which is a lot cleaner.
-
-`std/sequtils` already gives you that power. but there is another problem; it creates intermediate `seq`s. as you may know, in some functional programming languages like Haskell, the result of these higher-order funcions, are not evaluated until they are needed. [it's called **lazy evaluation**]
-
-In other words, there is no intermediate `seq`s.
-
-Actually, the latter code[using `std/sequtils`] is not equal to the first one. actually it is almost equal to:
-```nim
-var result1: seq[int]
-for it in list:
-  if it mod 2 == 0:
-    result1.add it
-
-var result2: seq[int]
-for it in result1:
-  result2.add it * 2
-
-result2 # do whatever you want with the final result
-```
-
-Another problem with `std/seqtutils` is that you have to convert your iterable to `seq` before using it with `filterIt`/`mapIt`/`...`
-```nim
-(1..20).filterIt(it > 5) # doesn't work
-(1..20).toseq.filterIt(it > 5) # works fine
-```
-Which can be quite expensive(time/resource consuming) task.
 
 ## The Solution
 `iterrr` uses the ultimate power of meta programming to bring you the what you just have wished.
 
-**by writing this:**
-```nim
-(1..20) |> filter(it > 5).map(it * 2).toSeq()
-```
-**you get this:**
-```nim
-var acc = toSeqInit[typeof(default(typeof(1..20)) * 2)]()
-
-block mainLoop:
-  for it in (1..20):
-    if it > 5:
-      block:
-        let it = it * 2
-        if not toSeq(acc, it):
-          break mainLoop
-
-toSeqFinalizer acc
-```
-
-it's not as clean as hand-written code, but it's good enough.
-
 ## Usage
 ### syntax
 use `|>` for normal.
-and `!>` for debug mode.
-
-**here's the pattern**
-```nim
-iterable |> entity1(code).entity2(code)...reducer(args...)
-```
 
 ### Main Entities:
 1. **map** :: similar to `mapIt` from `std/sequtils`
@@ -102,6 +32,7 @@ you can use other reducers, such as:
 * `all` :: similar to `all` from `std/sequtils`
 * `toHashSet` :: stores elements into a `HashSet`
 * `strJoin` :: similar to `join` from `std/strutils`
+* `toCountTable` :: similar to `toCountTable` from `std/tables`
 * **[your custom reducer!]**
 
 **NOTE**: see usage in `tests/test.nim`
@@ -113,8 +44,6 @@ let xmax = flatPoints.pairs |> filter(it[0] mod 2 == 0).map(it[1]).max()
 let xmax = countup(0, flatPoints.high, 2) |> map(flatPoints[it]).max()
 ```
 
-did you noticed that I've just used iterators?
-
 ### Custom Idents ?!?
 using just `it` in `mapIt` and `filterIt` is just ... and makes code a little unreadable.
 
@@ -125,28 +54,23 @@ using just `it` in `mapIt` and `filterIt` is just ... and makes code a little un
 
 **I mean**:  
 ```nim
-(1..10) |> map( _ ) # "it" is available inside the "map"
+(1..10) |> map( expr ) # "it" is available inside the "map"
 
-## bracket style
-(1..10) |> map[n]( _ ) # "n" is replaced with "it"
-(1..10) |> map[a1, a2, ...]( _ ) # "a1" is replaced with it[0], "a2" is replaced with it[1], ...
-
-## infix style
-(1..10) |> map(n => _ )
-(1..10) |> map((a1, a2, ...) => _ )
+## infix style`
+(1..10) |> map(n => expr )
+(1..10) |> map((n) => expr )
+(1..10) |> map((a1, a2, ...) => expr )
 ```
 
 **example**:
 ```nim
-"hello".pairs |> filter[indx, c](indx > 2).map[_, c](ord c)
+"hello".pairs |> filter((i, c) => i > 2).map((_, c) => ord c)
 ```
-Yes, you can do it!
-
 
 ### Limitation
 you have to specify the iterator for `seq` and other iterable objects [`HSlice` is an exception]
 
-i mean:
+**example:**
 ```nim
 let s = [1, 2, 3]
 echo s |> map($it) # doesn't work
@@ -157,7 +81,7 @@ echo s.pairs |> map($it) # works fine
 ### Define A Custom Reducer
 **every reducer have**: [let't name our custom reducer `zzz`]
 1. `zzzInit[T](args...): ...` :: initializes the value of accumulator(state) :: must be *generic*.
-2. `zzz(var acc, newValue): bool` :: updates the accumulator based on `newValue`, if returns false, the iteration stops.
+2. `zzzUpdate(var acc, newValue): bool` :: updates the accumulator based on `newValue`, if returns false, the iteration stops.
 3. `zzzFinalizer(n): ...` :: returns the result of the accumulator.
 
 **NOTE**: see implementations in `src/iterrr/reducers.nim`
@@ -165,26 +89,21 @@ echo s.pairs |> map($it) # works fine
 ### Inplace Reducer
 **pattern**:
 ```nim
-ITER |> ...reduce[acc, a](initialState, [finalizer]):
-   acc = ...
+ITER |> ...reduce(idents, acc = initial_value, [finalizer]):
+   update acc here
 ```
 
 **example**:
 ```nim
-## default idents, acc & it
-let summ = (1..10) |> reduce(0):
+let sum = (1..10) |> reduce(it, acc = 0):
   acc += it
 
-## custom idents without finalizer
-let summ = (1..10) |> reduce[acc, n](0):
-  acc += n
+# with finalizer
+let sum_2 = "help".pairs |> reduce((index, ch), acc = -1, acc * 2):
+  acc += index
 
-## custom idents + finalizer
-let summ2 = (1..10) |> reduce[acc, n](0, acc * 2):
-  acc += n
+# sum_2 = (-1 + 0 + 1 + 2 + 3) * 2 = 10
 
-(1..10) |> reduce[acc, (n1, n2, ...)](...):
-  ...
 ```
 
 ### Don't Wanna Use Reducer?
@@ -196,32 +115,6 @@ you can do it with `each(arg1, arg2,...)`. [arguments semantic is the same as cu
 ```nim
 (1..10) |> filter(it in 3..5).each(num):
   echo num
-```
-
-### Non Operator Version
-you can use `iterrr` instead of `|>` operator.
-
-**example**:
-```nim
-## inline
-"hello".items.iterrr filter(it != 'l').count()
-# or
-iterrr "hello".items, filter(it != 'l').count()
-
-## multi line
-iterrr "hello".items: # or "hello".items.iterrr:
-  map(...)
-  filter(...)
-  reduce[result, num](0):
-    ...
-
-## hey but you can use good ol' `|>`
-"hello".items |> # or "hello".items.iterrr:
-  map(...).
-  filter(...).
-  reduce[result, num](0):
-    ...
-
 ```
 
 ### Custom Adapter
@@ -273,17 +166,8 @@ see `src`/`iterrr`/`adapters`.
 
 ## Common Questions:
 ### `iterrr` VS `zero_functional`:
-`iterrr` targets the same problem as `zero_functional`, 
-while being better at:
-  1. extensibility
-  2. using less meta programming
+`iterrr` targets the same problem as `zero_functional`, while being better at  *extensibility*.
 
-and it also has smaller core.
-
-
-## With Special Thanks To:
-* [@beef331](https://github.com/beef331): who helped me a lot in my Nim journey
-
-## Foot Notes
-> writing a macro is kind of addicting...
+## Quotes
+> writing macro is kind of addicting...
 :: [PMunch](https://github.com/PMunch/)
