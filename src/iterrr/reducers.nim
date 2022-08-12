@@ -1,4 +1,5 @@
-import std/[macros, options]
+import std/options
+
 
 template rangeError(): untyped =
   raise newException(RangeDefect, "finding between 0 elements")

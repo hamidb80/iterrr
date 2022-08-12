@@ -1,6 +1,6 @@
 import std/[strutils, sequtils, tables]
 import std/macros, macroplus
-import ./iterrr/[reducers, helper, iterators, adapters]
+import ./iterrr/[reducers, helpers, iterators, adapters]
 
 export reducers, iterators, adapters
 
