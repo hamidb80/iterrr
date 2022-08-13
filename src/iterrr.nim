@@ -20,6 +20,7 @@ type
     of hoCustom:
       name: NimNode
       params: seq[NimNode]
+  
     else:
       iteratorIdentAliases: seq[NimNode]
       expr: NimNode
@@ -248,6 +249,11 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     let e =
       case call.kind:
       of hoCustom: newEmptyNode()
+      of hoInject: 
+        replacedIteratorIdents(call.expr, 
+          call.iteratorIdentAliases or @[ident "it"], 
+          uniqLoopIdent)
+
       else:
         let
           body = call.expr
@@ -366,7 +372,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
   when defined iterrrDebug:
     debugEcho "---------------------------"
     debugEcho repr result
-    debugEcho treeRepr result
+    # debugEcho treeRepr result
 
 
 # main ---------------------------------------
