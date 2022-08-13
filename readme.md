@@ -231,6 +231,9 @@ use `-d:iterrrDebug` flag to see generated code.
 ### `iterrr` VS `zero_functional`:
 `iterrr` targets the same problem as `zero_functional`, while being better at  *extensibility*.
 
+**Is it "zero cost" like `zero_functional` though?**
+> well NO, most of it is because of reducer update calls, however the speed difference is soooo tiny and you can't even measure it. I could define all reducer updates as `template` instead of function but IMO it's better to have call stack when you hit errors ...
+
 ## Quotes
 > writing macro is kind of addicting...
 :: [PMunch](https://github.com/PMunch/)
