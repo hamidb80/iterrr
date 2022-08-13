@@ -54,7 +54,7 @@ iterable |> entity1(_).entity2(_)...reduce(loopIdents, accIdent = initial_value,
   # update accIdent
 
 # custom code
-iterable |> entity1(_).entity2(_)...each(loopIdents):
+iterable |> entity1(_).entity2(_)...each(...loopIdents):
   # do with loopIdents
 ```
 
@@ -105,8 +105,8 @@ using just `it` in `mapIt` and `filterIt` is just ... and makes code a little un
 (1..10) |> map(n => _ )
 (1..10) |> map((n) => _ )
 (1..10) |> map((a1, a2, ...) => _ )
-(1..10) |> each((a1, a2, ...) => _ )
 (1..10) |> reduce((a1, a2, ...), acc = 2)
+(1..10) |> each(a1, a2)
 ```
 
 **example**:
