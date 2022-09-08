@@ -118,9 +118,9 @@ you have to specify the iterator for `seq` and other iterable objects [`HSlice` 
 **example:**
 ```nim
 let s = [1, 2, 3]
-echo s |> map($it) # doesn't work
-echo s.items |> map($it) # works fine
-echo s.pairs |> map($it) # works fine
+echo s |> map($it).toseq() # doesn't work
+echo s.items |> map($it).toseq() # works fine
+echo s.pairs |> map($it).toseq() # works fine
 ```
 
 ### Define Your Reducer!
