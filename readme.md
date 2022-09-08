@@ -5,12 +5,10 @@ Write higher-order functions, get its imperative style at the compile time!
 ## The Problem
 The problem is that writing a full nested loop is a boring task, and using clojure iterators slows down the speed.
 
-(`std/sequtils` is a nightmare, [iterutils](https://github.com/def-/nim-iterutils) is slightly better, but can we go faster? )
-
-**The real question is:** "Can meta-programming help us?"
+`std/sequtils` creates lots of temporary `seq`s and [iterutils](https://github.com/def-/nim-iterutils) uses closure iterators (which is slow).
 
 ## The Solution
-`iterrr` uses the *ultimate* power of meta-programming to bring you what you've just wished.
+`iterrr` uses the *ultimate* power of meta-programming to bring you the speed that Nim programmers deserve.
 
 
 ## example of generated code
