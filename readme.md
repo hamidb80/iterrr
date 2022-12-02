@@ -202,6 +202,11 @@ result:
 
 *see `tests`/`test.nim` for more.*
 
+**Define your custom adapter**:
+for now the name of loop iterator are limited to `it`.
+TODO; 
+see `src`/`iterrr`/`adapters`.
+
 ## `iterrr` macro
 don't like `|>` operator? no problem! use `iterrr` keyword:
 
@@ -221,11 +226,6 @@ example:
   filter(it > 3)
   sum()
 ```
-
-**Define your custom adapter**:
-for now the name of loop iterator are limited to `it`.
-TODO; 
-see `src`/`iterrr`/`adapters`.
 
 ## Debugging
 use `-d:iterrrDebug` flag to see generated code.
