@@ -20,7 +20,7 @@ type
     of hoCustom:
       name: NimNode
       params: seq[NimNode]
-  
+
     else:
       iteratorIdentAliases: seq[NimNode]
       expr: NimNode
@@ -227,7 +227,7 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     loopBody =
       if hasCustomCode:
         let id = ident "iterrrBody" & genUniqId()
-        tmplts.add newDirtyTemplate(id, ipack.reducer.params.map toUntypedIdentDef, code)
+        tmplts.add newDirtyTemplate(id, (ipack.reducer.params or @[ident "it"]).map toUntypedIdentDef, code)
         makeAliasCallWith id, ipack.reducer.params or @[uniqLoopIdent], uniqLoopIdent
 
       elif hasCustomReducer:
@@ -249,9 +249,9 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     let e =
       case call.kind:
       of hoCustom: newEmptyNode()
-      of hoInject: 
-        replacedIteratorIdents(call.expr, 
-          call.iteratorIdentAliases or @[ident "it"], 
+      of hoInject:
+        replacedIteratorIdents(call.expr,
+          call.iteratorIdentAliases or @[ident "it"],
           uniqLoopIdent)
 
       else:
@@ -374,11 +374,30 @@ proc iterrrImpl(itrbl: NimNode, calls: seq[NimNode],
     debugEcho repr result
     # debugEcho treeRepr result
 
-
-# main ---------------------------------------
+  # main ---------------------------------------
 
 macro `|>`*(itrbl, body): untyped =
   iterrrImpl itrbl, flattenNestedDotExprCall body
 
 macro `|>`*(itrbl, body, code): untyped =
   iterrrImpl itrbl, flattenNestedDotExprCall body, code
+
+macro iterrr*(itrbl, body): untyped =
+  case body.kind
+  of nnkStmtList:
+    var
+      calls = body.toseq
+      maybeCustomCode = calls[^1][^1]
+
+    case maybeCustomCode.kind
+    of nnkStmtList:
+      calls[^1].del calls[^1].len-1, 1
+      iterrrImpl itrbl, calls, maybeCustomCode
+    else:
+      iterrrImpl itrbl, calls
+
+  of nnkCall:
+    iterrrImpl itrbl, flattenNestedDotExprCall body
+
+  else:
+    err "invalid type. expected nnkCall or nnkStmtList but got: " & $body.kind

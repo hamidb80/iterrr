@@ -1,8 +1,10 @@
 # Change Logs
-### `1.0.0` -> `1.0.4`:
+### `1.0.0` -> `1.0.6`:
 - fix subtle package problem
 - remove unncessary untyped from template args in generated code
 - Replace `with` by `inject`
+- bring back `iterrr` macro
+- add default `it` argument to `each`
 
 ### `0.4.5` -> `1.0.0`:
 - remove "Non Operator Version"

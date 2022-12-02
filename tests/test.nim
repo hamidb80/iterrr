@@ -28,8 +28,8 @@ suite "main entities":
     check (1..5) |> map(it * it).filter(it > 10).toSeq() == @[16, 25]
 
     var c = 0
-    check "yes".items |> map((c, it)).inject(inc c).toSeq() == @[(0, 'y'), (1, 'e'),
-        (2, 's')]
+    check "yes".items |> map((c, it)).inject(inc c).toSeq() == @[(0, 'y'), (1,
+        'e'), (2, 's')]
 
 suite "nest":
   let matrix = @[
@@ -151,6 +151,21 @@ suite "custom reducer":
       acc = it
 
     check t == 18
+
+suite "`iterrr` macro":
+  let c = 
+    (1..10).items.iterrr:
+      filter(it > 3)
+      sum()
+
+  var acc = 0
+  
+  (1..10).items.iterrr:
+    filter(it > 3)
+    each():
+      acc.inc it
+
+  check acc == c
 
 
 import std/deques

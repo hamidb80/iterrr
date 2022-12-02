@@ -202,6 +202,26 @@ result:
 
 *see `tests`/`test.nim` for more.*
 
+## `iterrr` macro
+don't like `|>` operator? no problem! use `iterrr` keyword:
+
+pattern:
+```nim
+iterable.iterator.iterrr:
+  filter(...)
+  map(...)
+  reducer(...)
+  reduce(...)/each(...):
+    # code ...
+```
+
+example:
+```nim
+(1..10).items.iterrr:
+  filter(it > 3)
+  sum()
+```
+
 **Define your custom adapter**:
 for now the name of loop iterator are limited to `it`.
 TODO; 
