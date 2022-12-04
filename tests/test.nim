@@ -42,6 +42,57 @@ suite "nest":
 
     check r == @[@[(0, 0), (0, 1)], @[(1, 0), (1, 1)]]
 
+  test "Nested `iterrr` macro":
+    let r = matrix.pairs.iterrr:
+      map: it[1].pairs.iterrr:
+        map((ib, _) => (it[0], ib))
+        toseq()
+      toseq()
+
+    check r == @[@[(0, 0), (0, 1)], @[(1, 0), (1, 1)]]
+
+    let r2 = matrix.pairs.iterrr:
+      map: it[1].pairs.iterrr:
+        map: (ib, _) => (it[0], ib)
+        toseq()
+      toseq()
+
+    check r2 == @[@[(0, 0), (0, 1)], @[(1, 0), (1, 1)]]
+
+    let r3 = matrix.pairs.iterrr:
+      map: (ia, a) => a.pairs.iterrr:
+        map: (ib, _) => (ia, ib)
+        toseq()
+      toseq()
+
+    check r3 == @[@[(0, 0), (0, 1)], @[(1, 0), (1, 1)]]
+
+    let i = """
+
+  16-80,80-87
+  4-9,10-97
+  6-94,93-93
+  31-73,8-73
+
+  4-72,5-73
+  6-63,4-5
+    """.splitLines
+    let r1 = i.items.iterrr:
+      map: it.strip()                         # Strip whitespace
+      filter: it.len > 0                      # Skip empty lines
+      map: it.split(',')                      # 1st Split
+      map: it.items.iterrr:                   #
+        map(s => s.split('-'))                # nested split
+        flatten()                             # flatten resulting sequence
+        toSeq()                               #
+      map: it.items.iterrr:                   #
+        map(s => parseInt(s))                 # string -> integer
+        toSeq()                               #
+      map: ( it[0] .. it[1], it[2] .. it[3] ) # build 2-tuple of slices
+      toSeq()
+
+    check r1 == @[(16 .. 80, 80 .. 87), (4 .. 9, 10 .. 97), (6 .. 94, 93 .. 93), (31 .. 73, 8 .. 73), (4 .. 72, 5 .. 73), (6 .. 63, 4 .. 5)]
+
 suite "ident":
   test "no ident":
     check (1..10) |> filter(it in 3..5).toSeq() == @[3, 4, 5]
@@ -153,13 +204,13 @@ suite "custom reducer":
     check t == 18
 
 suite "`iterrr` macro":
-  let c = 
+  let c =
     (1..10).items.iterrr:
       filter(it > 3)
       sum()
 
   var acc = 0
-  
+
   (1..10).items.iterrr:
     filter(it > 3)
     each():
@@ -167,6 +218,13 @@ suite "`iterrr` macro":
 
   check acc == c
 
+  let t = (1..10).items.iterrr:
+    filter: a => a > 3
+    filter: (b) => (b < 6)
+    map: c => c*2
+    sum()
+
+  check t == 18
 
 import std/deques
 suite "adapters":

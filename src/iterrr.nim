@@ -64,6 +64,8 @@ func iteratorIdents(call: NimNode): seq[NimNode] =
 
   if call[1].matchInfix "=>":
     extractIdents call[1][InfixLeftSide]
+  elif call[1].kind == nnkStmtList and matchInfix(call[1][0], "=>"):
+    extractIdents call[1][0][InfixLeftSide]
   else:
     @[]
 
@@ -91,6 +93,11 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
         expr =
           if matchInfix(firstParam, "=>"):
             firstParam[InfixRightSide]
+          elif firstParam.kind == nnkStmtList and matchInfix(firstParam[0], "=>"):
+            if firstParam[0].len > InfixBody:
+              newCall(firstParam[0][InfixRightSide], firstParam[0][InfixBody])
+            else:
+              firstParam[0][InfixRightSide]
           else:
             firstParam
 
