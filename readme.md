@@ -222,9 +222,13 @@ iterable.iterator.iterrr:
 
 example:
 ```nim
-(1..10).items.iterrr:
-  filter(it > 3)
-  sum()
+let points = @[(1, 2), (-3, 4), (12, 3), (-1, -6), (5, -9)]
+
+points.items.iterrr:
+  map (x, y) => x # or map((x, y) => x)
+  filter it > 0 # or filter(it)
+  each n: # or each(n):
+    echo n
 ```
 
 ## Debugging
