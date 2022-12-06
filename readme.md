@@ -103,6 +103,15 @@ using just `it` in `mapIt` and `filterIt` is just ... and makes code a little un
 (1..10) |> reduce((a1, a2, ...), acc = 2)
 (1..10) |> each(a1, a2)
 ```
+Custom idents work with both `op:` and `op()` style syntax:
+```nim
+(1..10).items.iterrr:
+  map: n => _
+  ...
+(1..10).items.iterrr:
+  filter: (n, k) => _
+  ...
+```
 
 **example**:
 ```nim
@@ -229,6 +238,26 @@ points.items.iterrr:
   filter it > 0   # or filter(it > 0)
   each n:         # or each(n):
     echo n
+```
+
+## Nesting
+
+Both the `|>` operator and `iterrr` macro can be nested.
+
+Examples:
+
+```nim
+matrix.pairs |> map((ia, a) => (
+    a.pairs |> map((ib, _) => (ia, ib)).toseq()
+  )).toseq()
+```
+
+```nim
+matrix.pairs.iterrr:
+  map: (ia, a) => a.pairs.iterrr:
+    map: (ib, _) => (ia, ib)
+    toseq()
+  toseq()
 ```
 
 ## Debugging
