@@ -1,4 +1,7 @@
 # Change Logs
+### `1.0.6` -> `1.2.0`:
+- add nesting `op: ...` syntax
+
 ### `1.0.0` -> `1.0.6`:
 - fix subtle package problem
 - remove unncessary untyped from template args in generated code
