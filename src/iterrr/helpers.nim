@@ -119,7 +119,7 @@ proc replaceNode*(node: NimNode, path: NodePath, by: NimNode) =
   cur[path[^1]] = by
 
 
-func findPathsImpl(node: NimNode,
+proc findPathsImpl(node: NimNode,
   fn: proc(node: NimNode): bool,
   path: NodePath,
   result: var seq[NodePath]) =
@@ -131,7 +131,7 @@ func findPathsImpl(node: NimNode,
     for i, n in node:
       findPathsImpl n, fn, path & @[i], result
 
-func findPaths*(node: NimNode,
+proc findPaths*(node: NimNode,
   fn: proc(node: NimNode): bool): seq[NodePath] {.inline.} =
 
   findPathsImpl node, fn, @[], result
