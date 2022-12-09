@@ -108,7 +108,11 @@ func toIterrrPack(calls: seq[NimNode]): IterrrPack =
 
     let
       nc = n[CallIdent]
-      caller = nc.strVal
+      caller = case nc.kind
+        of nnkOpenSymChoice:
+          $nc[0]
+        else:
+          nc.strVal
 
     case caller:
     of "map": addToCallChain hoMap
