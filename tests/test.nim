@@ -286,3 +286,20 @@ suite "custom adapter":
         yield (it + `adder`) * `mult`
 
     check (1..3) |> ALU(1, -1).toseq() == @[-2, -3, -4]
+
+suite "Inside template":
+  test "Iterrr macro":
+    template countGreaterThan[T](iter: iterable[T], threshold: T): int =
+      iter.iterrr:
+        filter: it > threshold
+        count()
+
+    let r = (0 .. 10).items.countGreaterThan(5)
+    check r == 5
+
+  test "|> operator":
+    template countGreaterThan[T](iter: iterable[T], threshold: T): int =
+      iter |> filter(it > threshold).count()
+
+    let r = (0 .. 10).items.countGreaterThan(6)
+    check r == 4

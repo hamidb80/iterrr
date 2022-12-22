@@ -75,6 +75,9 @@ proc flattenNestedDotExprCallImpl(n: NimNode, acc: var seq[NimNode]) =
   of nnkDotExpr:
     dotExprJob n[CallIdent][0], n[CallIdent][1], n[CallArgs]
 
+  of nnkOpenSymChoice:
+    acc.add n
+
   else:
     err fmt"invalid caller {n[CallIdent].kind}"
 
