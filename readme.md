@@ -1,4 +1,4 @@
-> Once a young man approached the Prophet Muhammad and asked him for some advice. The Prophet replied, “Do not become angry,” and he repeated this three times”
+> Once a young man approached the Prophet Muhammad and asked him for some advice. The Prophet replied, “Do not become angry,” and he repeated this three times
 
 # iterrr!
 iterate faster ... 🏎️.
