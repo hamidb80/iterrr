@@ -109,9 +109,11 @@ Custom idents work with both `op:` and `op()` style syntax:
 ```nim
 (1..10).items.iterrr:
   map: n => _
+  # or map n => _
   ...
 (1..10).items.iterrr:
   filter: (n, k) => _
+  # or filter (n, k) => _
   ...
 ```
 
